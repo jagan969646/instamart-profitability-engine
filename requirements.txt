@@ -1,0 +1,14 @@
+# Core Data Processing
+pandas
+numpy
+
+# Interactive Dashboard & Visuals
+streamlit
+plotly
+
+# Statistical Analysis & Machine Learning
+scipy
+seaborn
+matplotlib
+scikit-learn
+xgboost
