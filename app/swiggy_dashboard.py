@@ -71,8 +71,9 @@ st.divider()
 # --- DATA LOADING ---
 @st.cache_data
 def load_data():
-    # Use get_path to ensure the CSV is found on the server
-    data_path = get_path('swiggy_simulated_data.csv')
+    # Update this line to include the 'data_pipeline' folder
+    data_path = get_path('data_pipeline/swiggy_simulated_data.csv')
+    
     df = pd.read_csv(data_path)
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['hour'] = df['order_time'].dt.hour
@@ -167,3 +168,4 @@ with col_a2:
 
 st.markdown("---")
 st.caption("By Jagadeesh.N")
+
