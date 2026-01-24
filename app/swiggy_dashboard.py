@@ -2,54 +2,63 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import os
 
 # --- PAGE CONFIG ---
 st.set_page_config(
     page_title="Instamart Strategy Portal",
-    page_icon="🧡", 
+    page_icon="🧡",
     layout="wide",
 )
 
-# --- BRANDING CONSTANTS ---
-SWIGGY_ORANGE = "#FC8019"
-INSTAMART_GREEN = "#60B246"
-DARK_TEXT = "#3D4152"
-
-# --- PATH HANDLING ---
-# Since files are in the same 'app' directory, we look locally
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, 'swiggy_simulated_data.csv')
-
-# --- CUSTOM CSS ---
-st.markdown(f"""
+# --- CUSTOM EXECUTIVE STYLING ---
+st.markdown("""
     <style>
-    .stApp {{ background-color: #fcfcfc; }}
-    .kpi-metric {{
-        background-color: {SWIGGY_ORANGE} !important; 
+    .main {
+        background-color: #f5f7f9;
+    }
+    /* KPI background style - Swiggy Orange with White Text */
+    .kpi-metric {
+        background-color: #FC8019 !important; 
         color: white !important;
         padding: 20px;
-        border-radius: 12px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
         text-align: center;
-        box-shadow: 0 4px 12px rgba(252, 128, 25, 0.15);
-    }}
-    .kpi-label {{ font-size: 0.9rem; opacity: 0.9; font-weight: 400; }}
-    .kpi-value {{ font-size: 1.8rem; font-weight: 700; margin: 0; }}
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    /* Label inside the KPI box */
+    .kpi-label {
+        font-size: 0.9rem;
+        color: #ffffff !important; 
+        opacity: 0.9;
+        font-weight: 400;
+    }
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0);
+    }
+    h1, h2, h3 {
+        color: #3D4152;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER ---
+# --- HEADER SECTION ---
 col_logo, col_text = st.columns([1, 5])
+
 with col_logo:
-    # Use a high-quality emoji fallback if Logo.png isn't present
-    st.markdown(f"<h1 style='font-size: 80px; margin:0; text-align:center;'>🧡</h1>", unsafe_allow_html=True)
+    # Ensuring we look for Logo.png
+    try:
+        st.image("Logo.png", width=120) 
+    except:
+        st.subheader(":orange[SWIGGY]")
 
 with col_text:
-    st.markdown(f"<h1 style='color:{DARK_TEXT}; margin-bottom:0;'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h4 style='color:{INSTAMART_GREEN};'>🚀 Goal: Positive Contribution Margin 2026</h4>", unsafe_allow_html=True)
+    st.title("Instamart Strategic Decision Engine")
+    st.markdown("#### 🚀 Target: Positive Contribution Margin by June 2026")
 
 st.divider()
-
 # --- DATA LOADING ---
 @st.cache_data
 def load_data():
@@ -70,10 +79,12 @@ except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
 
-# --- SIDEBAR ---
+# --- SIDEBAR FILTERS ---
 st.sidebar.header("Hyperlocal Filters")
-zones = st.sidebar.multiselect("Select Delivery Zones", options=df['zone'].unique(), default=df['zone'].unique())
-filtered_df = df[df['zone'].isin(zones)]
+selected_zones = st.sidebar.multiselect("Select Target Zones", options=df['zone'].unique(), default=df['zone'].unique())
+weather_filter = st.sidebar.multiselect("Weather Condition", options=df['weather'].unique(), default=df['weather'].unique())
+
+filtered_df = df[(df['zone'].isin(selected_zones)) & (df['weather'].isin(weather_filter))]
 
 # --- KPI ROW ---
 total_gov = filtered_df['order_value'].sum()
@@ -147,4 +158,5 @@ with col_a2:
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Instamart Decision Intelligence")
+
 
