@@ -74,6 +74,7 @@ st.divider()
 # -----------------------------
 # DATA LOADING
 # -----------------------------
+# --- DATA LOADING ---
 @st.cache_data
 def load_data():
     if not os.path.exists(DATA_PATH):
@@ -82,11 +83,9 @@ def load_data():
     df = pd.read_csv(DATA_PATH)
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['hour'] = df['order_time'].dt.hour
-    
     # Financial Logic
     df['revenue'] = df['order_value'] * 0.20
     df['net_profit'] = df['revenue'] - df['delivery_cost'] - df['discount']
-    
     return df
 
 try:
@@ -94,7 +93,6 @@ try:
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
-
 # -----------------------------
 # SIDEBAR FILTERS
 # -----------------------------
@@ -200,3 +198,4 @@ with col_a2:
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh N | Instamart Decision Intelligence")
+
