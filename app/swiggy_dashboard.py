@@ -189,6 +189,7 @@ with col_a2:
         st.success("Module A: Push notifications sent to 1,240 nearby users.")
         
 st.markdown("---")
-st.caption("Developed by Jagadeesh N | Instamart Decision Intelligence")
+st.caption("Developed by Jagadeesh N | Instamart Strategic Decision Engine")
+
 
 
