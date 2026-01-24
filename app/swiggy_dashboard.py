@@ -5,9 +5,9 @@ import plotly.graph_objects as go
 
 # --- PAGE CONFIG ---
 st.set_page_config(
-    page_title="Instamart Strategy Portal",
-    page_icon="🧡",
-    layout="wide",
+    page_title="Instamart Strategy Portal",
+    page_icon="🧡",
+    layout="wide",
 )
 
 # --- CUSTOM EXECUTIVE STYLING ---
@@ -161,3 +161,4 @@ st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Instamart Decision Intelligence")
 
 (i want to add the logo which is in the same dictionary)
+
