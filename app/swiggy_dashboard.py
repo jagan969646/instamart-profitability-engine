@@ -59,6 +59,7 @@ with col_text:
     st.markdown("#### 🚀 Target: Positive Contribution Margin by June 2026")
 
 st.divider()
+
 # --- DATA LOADING ---
 @st.cache_data
 def load_data():
@@ -158,5 +159,6 @@ with col_a2:
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Instamart Decision Intelligence")
+
 
 
