@@ -53,16 +53,6 @@ with col_logo:
         st.image(logo_file, width=150)
     else:
         st.subheader(":orange[SWIGGY]")
-        ####
-col_logo, col_text = st.columns([1, 5])
-
-with col_logo:
-    # Ensuring we look for Logo.png
-    try:
-        st.image("Logo.png", width=120) 
-    except:
-        st.subheader(":orange[SWIGGY]")
-
 with col_text:
     st.title("Instamart Strategic Decision Engine")
     st.markdown("#### 🚀 Target: Positive Contribution Margin by June 2026")
@@ -168,6 +158,7 @@ with col_a2:
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Instamart Decision Intelligence")
+
 
 
 
