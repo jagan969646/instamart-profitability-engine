@@ -3,7 +3,7 @@ pandas
 numpy
 
 # Interactive Dashboard & Visuals
-streamlit
+streamlit>=1.31.0
 plotly
 
 # Statistical Analysis & Machine Learning
