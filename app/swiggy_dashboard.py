@@ -136,21 +136,15 @@ st.divider()
 # -----------------------------
 # STRATEGIC VISUALS
 # -----------------------------
+# --- STRATEGIC VISUALS ---
 row2_col1, row2_col2 = st.columns(2)
 
 with row2_col1:
-    st.subheader("Hyperlocal Contribution Margin (CM) Analysis")
-    zone_data = (
-        filtered_df.groupby('zone')['net_profit']
-        .mean()
-        .reset_index()
-        .sort_values('net_profit')
-    )
+    st.subheader(" Hyperlocal Contribution Margin (CM) Analysis")
+    zone_data = filtered_df.groupby('zone')['net_profit'].mean().reset_index().sort_values('net_profit')
     fig_zone = px.bar(
-        zone_data,
-        x='net_profit',
-        y='zone',
-        orientation='h',
+        zone_data, x='net_profit', y='zone', 
+        orientation='h', 
         color='net_profit',
         color_continuous_scale='RdYlGn',
         template="simple_white"
@@ -158,44 +152,43 @@ with row2_col1:
     st.plotly_chart(fig_zone, use_container_width=True)
 
 with row2_col2:
-    st.subheader("Peak vs. Non-Peak Operational Efficiency")
+    st.subheader(" Peak vs. Non-Peak Operational Efficiency")
     hourly_vol = filtered_df.groupby('hour').size().reset_index(name='orders')
     fig_hour = px.area(
-        hourly_vol,
-        x='hour',
-        y='orders',
+        hourly_vol, x='hour', y='orders',
+        color_discrete_sequence=['#fc8019'],
         template="simple_white"
     )
+    
+    # Highlight Dead Zone - Now targeting both Module A & B
     fig_hour.add_vrect(
-        x0=14, x1=17,
-        fillcolor="#60B246",
-        opacity=0.2,
+        x0=14, x1=17, 
+        fillcolor="#60B246", 
+        opacity=0.2, 
         annotation_text="🎯 STRATEGIC TARGET<br>Module A (Waste Clearance)<br>Module B (Scheduled Savings)",
         annotation_position="top left"
     )
     st.plotly_chart(fig_hour, use_container_width=True)
 
-# -----------------------------
-# MODULE A: PERISHABLE ALERT
-# -----------------------------
+# --- MODULE A: PERISHABLE DECAY ALERT ---
 st.divider()
 st.subheader("Inventory Salvage & Revenue Recovery Engine")
-
 perishables = filtered_df[filtered_df['category'] == 'Perishable']
 high_risk = perishables[perishables['freshness_hrs_left'] < 12]
 
 col_a1, col_a2 = st.columns([2, 1])
 
 with col_a1:
-    fig_decay = px.histogram(perishables, x='freshness_hrs_left', nbins=30)
+    fig_decay = px.histogram(perishables, x='freshness_hrs_left', color_discrete_sequence=['#60B246'], nbins=30)
     fig_decay.update_layout(title="Freshness Distribution (Hours Left)")
     st.plotly_chart(fig_decay, use_container_width=True)
 
 with col_a2:
-    st.warning(f"**Action Required:** {len(high_risk)} units have <12 hours shelf life.")
+    st.warning(f"**Action Required:** {len(high_risk)} units in {selected_zones} have <12 hours shelf life.")
     if st.button("🚀 Trigger 'Flash Deals' for High-Risk SKU"):
-        st.success("Module A: Push notifications sent to nearby users.")
-
+        st.success("Module A: Push notifications sent to 1,240 nearby users.")
+        
 st.markdown("---")
 st.caption("Developed by Jagadeesh N | Instamart Decision Intelligence")
+
 
