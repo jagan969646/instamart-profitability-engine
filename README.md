@@ -1,7 +1,7 @@
 # 🧡 Instamart Strategic Decision Engine
 > **An End-to-End Analytics Ecosystem for Hyperlocal Unit Economics**
 
- [Dahboard line](https://instamart-profitability-engine-wvrtjo8lurq5sppk5j7udg.streamlit.app/#swiggy) 
+ [Dahboard](https://instamart-profitability-engine-wvrtjo8lurq5sppk5j7udg.streamlit.app/#swiggy) 
 
 ## 📌 Project Overview
 This project simulates a high-growth environment for **Swiggy Instamart**, focusing on the "Path to Profitability." It features a full analytical stack: from synthetic data generation to predictive modeling and an executive-level command center.
