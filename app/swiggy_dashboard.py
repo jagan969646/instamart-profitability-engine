@@ -45,6 +45,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- HEADER SECTION ---
+
+with col_logo:
+    # Try Mu_sigma_logo.jpg first, then fallback to Logo.png, then text
+    logo_file = get_asset_path("Logo.png") or get_asset_path("Logo.png")
+    if logo_file:
+        st.image(logo_file, width=150)
+    else:
+        st.subheader(":orange[SWIGGY]")
+        ####
 col_logo, col_text = st.columns([1, 5])
 
 with col_logo:
@@ -159,6 +168,7 @@ with col_a2:
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Instamart Decision Intelligence")
+
 
 
 
