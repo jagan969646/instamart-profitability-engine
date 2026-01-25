@@ -30,11 +30,11 @@ st.markdown("""
     .kpi-metric {
         background-color: #FC8019;
         color: white;
-        padding: 22px;
-        border-radius: 18px;
-        box-shadow: 0 6px 14px rgba(252, 128, 25, 0.35);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
         text-align: center;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: bold;
         margin-bottom: 10px;
     }
@@ -46,17 +46,17 @@ st.markdown("""
         font-weight: 500;
     }
 
+     [data-testid="stMetricValue"] {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        color: #3D4152;
+    }
+
+    /* Customizing Headings */
     h1, h2, h3 { color: #3D4152; }
-
-    [data-testid="column"] {
-        padding: 0.3rem !important;
-    }
-
-    [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0);
-    }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- KPI CARD FUNCTION ---
 def kpi_card(title, value):
@@ -209,3 +209,4 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
