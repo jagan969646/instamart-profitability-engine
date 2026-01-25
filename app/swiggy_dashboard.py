@@ -140,10 +140,13 @@ st.divider()
 # -----------------------------
 # KPI ROW (ENHANCED ORANGE BOXES)
 # -----------------------------
-total_gov = filtered_df['order_value'].sum()
-avg_cm = filtered_df['net_profit'].mean()
-burn_rate = (filtered_df['discount'].sum() / total_gov) * 100
-orders = len(filtered_df)
+# -----------------------------
+# KPI ROW (ENHANCED ORANGE BOXES)
+# -----------------------------
+total_gov = f_df['order_value'].sum()
+avg_cm = f_df['net_profit'].mean()
+burn_rate = (f_df['discount'].sum() / total_gov) * 100
+orders = len(f_df)
 
 prev_avg_cm = df['gross_margin'].mean()  # baseline for simulation delta
 delta_cm = avg_cm - prev_avg_cm
@@ -199,6 +202,7 @@ with kpi4:
     )
 
 st.divider()
+
 
 # --- ANALYTICS TABS ---
 t1, t2, t3, t4 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Demand Forecasting"])
@@ -257,4 +261,5 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
