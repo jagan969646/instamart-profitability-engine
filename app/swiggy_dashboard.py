@@ -59,11 +59,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- KPI CARD FUNCTION ---
-def kpi_card(title, value):
+def kpi_card(title, value, delta=None, delta_color="white"):
+    delta_html = ""
+    if delta:
+        delta_html = f"<div style='font-size:0.85rem; opacity:0.85; color:{delta_color}; margin-top:4px;'>{delta}</div>"
+
     return f"""
     <div class="kpi-metric">
-        <div style="font-size:1.8rem; font-weight:800;">{value}</div>
+        <div style="font-size:1.9rem; font-weight:800;">{value}</div>
         <div class="kpi-label">{title}</div>
+        {delta_html}
     </div>
     """
 
@@ -102,7 +107,6 @@ with st.sidebar:
         st.image(SWIGGY_URL, width=120)
 
     st.title("Control Tower")
-
     zones = st.multiselect("Geographic Clusters", df['zone'].unique(), df['zone'].unique())
 
     st.divider()
@@ -132,23 +136,48 @@ with head_col2:
 
 st.divider()
 
-# --- EXECUTIVE KPI ROW (ORANGE BOXES) ---
+# --- EXECUTIVE KPI ROW ---
 m1, m2, m3, m4 = st.columns(4)
 
 with m1:
-     st.metric("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M", "12% vs LW"), unsafe_allow_html=True)
+    st.markdown(
+        kpi_card("Total GOV",
+                 f"₹{f_df['order_value'].sum()/1e6:.2f}M",
+                 "▲ 12% vs LW",
+                 "#D1FAE5"),
+        unsafe_allow_html=True
+    )
 
 with m2:
     avg_p = f_df['net_profit'].mean()
-    st.markdown(kpi_card("Avg Net Profit / Order", f"₹{avg_p:.2f}"), unsafe_allow_html=True)
+    delta = avg_p - df['gross_margin'].mean()
+    st.markdown(
+        kpi_card("Net Profit / Order",
+                 f"₹{avg_p:.2f}",
+                 f"Sim Δ ₹{delta:.2f}",
+                 "#E0F2FE"),
+        unsafe_allow_html=True
+    )
 
 with m3:
     prof_rate = (f_df['net_profit'] > 0).mean() * 100
-    st.markdown(kpi_card("Order Profitability", f"{prof_rate:.1f}%"), unsafe_allow_html=True)
+    st.markdown(
+        kpi_card("Order Profitability",
+                 f"{prof_rate:.1f}%",
+                 "🎯 Target: 70%",
+                 "#FEF3C7"),
+        unsafe_allow_html=True
+    )
 
 with m4:
     burn = (f_df['discount'].sum() / f_df['order_value'].sum()) * 100
-    st.markdown(kpi_card("Discount Burn Rate", f"{burn:.1f}%"), unsafe_allow_html=True)
+    st.markdown(
+        kpi_card("Burn Rate",
+                 f"{burn:.1f}%",
+                 "▼ 3.2% Improvement",
+                 "#DCFCE7"),
+        unsafe_allow_html=True
+    )
 
 st.divider()
 
@@ -160,65 +189,52 @@ with t1:
     with col_a:
         st.subheader("Unit Economics Breakdown")
         metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
-        vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
+        vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(),
                 -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
-        
+
         fig_water = go.Figure(go.Waterfall(
-            name = "Economics", orientation = "v",
-            measure = ["relative", "relative", "relative", "relative", "relative", "relative", "total"],
-            x = metrics + ['Net Profit'],
-            y = vals + [0],
-            connector = {"line":{"color":"rgb(63, 63, 63)"}},
-            decreasing = {"marker":{"color":"#EF4444"}},
-            increasing = {"marker":{"color":"#60B246"}},
-            totals = {"marker":{"color":"#FC8019"}}
+            orientation="v",
+            measure=["relative"] * 6 + ["total"],
+            x=metrics + ['Net Profit'],
+            y=vals + [0],
+            decreasing={"marker": {"color": "#EF4444"}},
+            increasing={"marker": {"color": "#60B246"}},
+            totals={"marker": {"color": "#FC8019"}}
         ))
         fig_water.update_layout(title="Average Unit Economics (Per Order)", template="simple_white")
         st.plotly_chart(fig_water, use_container_width=True)
-        
+
     with col_b:
-        st.subheader("Revenue Diversification")
+        st.subheader("Revenue Mix")
         rev_mix = pd.DataFrame({
             'Channel': ['Comm', 'Ads', 'Fees'],
             'Rev': [f_df['commission'].sum(), f_df['ad_revenue'].sum(), f_df['delivery_fee'].sum()]
         })
-        st.plotly_chart(px.pie(rev_mix, values='Rev', names='Channel', hole=0.6, 
-                               color_discrete_sequence=['#FC8019', '#3D4152', '#60B246']), use_container_width=True)
+        st.plotly_chart(px.pie(rev_mix, values='Rev', names='Channel', hole=0.6),
+                        use_container_width=True)
 
 with t2:
     st.subheader("Logistics Efficiency Heatmap")
     f_df['hour'] = f_df['order_time'].dt.hour
     heat = f_df.pivot_table(index='zone', columns='hour', values='delivery_cost', aggfunc='mean')
-    st.plotly_chart(px.imshow(heat, color_continuous_scale='YlOrRd', aspect="auto"), use_container_width=True)
-    st.info("💡 **Strategy:** Yellow cells indicate cost leakage. Deploy 'Batching' algorithms during these windows.")
+    st.plotly_chart(px.imshow(heat, aspect="auto"), use_container_width=True)
 
 with t3:
     st.subheader("Inventory Salvage Management")
-    perishables = f_df[f_df['category'] == 'Perishable'].copy()
+    perishables = f_df[f_df['category'] == 'Perishable']
     risk = perishables[perishables['freshness_hrs_left'] < 12]
-    
-    ca, cb = st.columns([1, 2])
-    with ca:
-        st.warning(f"⚠️ {len(risk)} Units at Expiry Risk")
-        st.metric("Potential Liquidation Value", f"₹{len(risk)*110:,}")
-        if st.button("🚀 Execute Flash Liquidation"):
-            st.success("App Push Notifications Sent!")
-            st.balloons()
-    with cb:
-        st.plotly_chart(px.box(perishables, x='zone', y='freshness_hrs_left', color='zone', title="Freshness Variance"), use_container_width=True)
+    st.warning(f"⚠️ {len(risk)} Units at Expiry Risk")
 
 with t4:
-    st.subheader("Predictive Demand Sensing (XGBoost Inferred)")
+    st.subheader("Predictive Demand Sensing")
     f_df['forecast'] = f_df['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
-    hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value', 'forecast']].sum().reset_index()
-    
-    fig_pred = go.Figure()
-    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['order_value'], name='Actual GOV', line=dict(color='#3D4152')))
-    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['forecast'], name='XGBoost Forecast', line=dict(dash='dash', color='#FC8019')))
-    st.plotly_chart(fig_pred, use_container_width=True)
+    hist = f_df.groupby(f_df['order_time'].dt.date)[['order_value', 'forecast']].sum().reset_index()
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=hist['order_time'], y=hist['order_value'], name="Actual GOV"))
+    fig.add_trace(go.Scatter(x=hist['order_time'], y=hist['forecast'], name="Forecast", line=dict(dash="dash")))
+    st.plotly_chart(fig, use_container_width=True)
 
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
-
-
