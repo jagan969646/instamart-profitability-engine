@@ -30,11 +30,11 @@ st.markdown("""
     .kpi-metric {
         background-color: #FC8019;
         color: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
+        padding: 22px;
+        border-radius: 18px;
+        box-shadow: 0 6px 14px rgba(252, 128, 25, 0.35);
         text-align: center;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         font-weight: bold;
         margin-bottom: 10px;
     }
@@ -46,17 +46,17 @@ st.markdown("""
         font-weight: 500;
     }
 
-     [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important;
-        font-weight: 700 !important;
-        color: #3D4152;
+    h1, h2, h3 { color: #3D4152; }
+
+    [data-testid="column"] {
+        padding: 0.3rem !important;
     }
 
-    /* Customizing Headings */
-    h1, h2, h3 { color: #3D4152; }
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0);
+    }
 </style>
 """, unsafe_allow_html=True)
-
 
 # --- KPI CARD FUNCTION ---
 def kpi_card(title, value):
@@ -134,20 +134,23 @@ st.divider()
 
 # --- EXECUTIVE KPI ROW (ORANGE BOXES) ---
 m1, m2, m3, m4 = st.columns(4)
+
 with m1:
-    st.metric("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M", "12% vs LW")
+    st.markdown(kpi_card("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M"), unsafe_allow_html=True)
+
 with m2:
     avg_p = f_df['net_profit'].mean()
-    st.metric("Net Profit / Order", f"₹{avg_p:.2f}", f"₹{avg_p - df['gross_margin'].mean():.2f} Sim Delta")
+    st.markdown(kpi_card("Avg Net Profit / Order", f"₹{avg_p:.2f}"), unsafe_allow_html=True)
+
 with m3:
     prof_rate = (f_df['net_profit'] > 0).mean() * 100
-    st.metric("Order Profitability", f"{prof_rate:.1f}%", f"Target: 70%")
+    st.markdown(kpi_card("Order Profitability", f"{prof_rate:.1f}%"), unsafe_allow_html=True)
+
 with m4:
     burn = (f_df['discount'].sum() / f_df['order_value'].sum()) * 100
-    st.metric("Burn Rate", f"{burn:.1f}%", "-3.2% Improvement", delta_color="inverse")
+    st.markdown(kpi_card("Discount Burn Rate", f"{burn:.1f}%"), unsafe_allow_html=True)
 
 st.divider()
-
 
 # --- ANALYTICS TABS ---
 t1, t2, t3, t4 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Demand Forecasting"])
@@ -206,5 +209,3 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
-
-
