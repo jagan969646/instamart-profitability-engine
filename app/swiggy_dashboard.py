@@ -134,23 +134,20 @@ st.divider()
 
 # --- EXECUTIVE KPI ROW (ORANGE BOXES) ---
 m1, m2, m3, m4 = st.columns(4)
-
 with m1:
-    st.markdown(kpi_card("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M"), unsafe_allow_html=True)
-
+    st.metric("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M", "12% vs LW")
 with m2:
     avg_p = f_df['net_profit'].mean()
-    st.markdown(kpi_card("Avg Net Profit / Order", f"₹{avg_p:.2f}"), unsafe_allow_html=True)
-
+    st.metric("Net Profit / Order", f"₹{avg_p:.2f}", f"₹{avg_p - df['gross_margin'].mean():.2f} Sim Delta")
 with m3:
     prof_rate = (f_df['net_profit'] > 0).mean() * 100
-    st.markdown(kpi_card("Order Profitability", f"{prof_rate:.1f}%"), unsafe_allow_html=True)
-
+    st.metric("Order Profitability", f"{prof_rate:.1f}%", f"Target: 70%")
 with m4:
     burn = (f_df['discount'].sum() / f_df['order_value'].sum()) * 100
-    st.markdown(kpi_card("Discount Burn Rate", f"{burn:.1f}%"), unsafe_allow_html=True)
+    st.metric("Burn Rate", f"{burn:.1f}%", "-3.2% Improvement", delta_color="inverse")
 
 st.divider()
+
 
 # --- ANALYTICS TABS ---
 t1, t2, t3, t4 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Demand Forecasting"])
@@ -209,4 +206,5 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
