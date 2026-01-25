@@ -18,7 +18,7 @@ SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.s
 # --- CUSTOM EXECUTIVE STYLING ---
 st.markdown("""
 <style>
-    .stApp { background-color: #f5f7f9; }
+    .stApp { background-color: #262730; }
     
     /* Header & Branding Styling */
     .main-title {
@@ -197,4 +197,5 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
