@@ -74,7 +74,7 @@ df = load_and_enrich()
 with st.sidebar:
     # Use local logo if available, otherwise fallback to URL
     if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=120)
+        st.image(Logo.png, width=120)
     else:
         st.image(SWIGGY_URL, width=120)
         
@@ -193,3 +193,4 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
