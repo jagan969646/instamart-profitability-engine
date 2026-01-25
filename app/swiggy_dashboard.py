@@ -13,21 +13,39 @@ BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 
 # --- CUSTOM EXECUTIVE STYLING ---
+# CUSTOM EXECUTIVE STYLING
+# -----------------------------
 st.markdown("""
 <style>
-    .stApp { background-color: #f8f9fb; }
-    [data-testid="stMetricValue"] { font-size: 1.8rem !important; font-weight: 700 !important; color: #3D4152; }
-    .kpi-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        border-top: 4px solid #FC8019;
-        text-align: center;
-    }
-    .main-title { color: #3D4152; font-weight: 800; letter-spacing: -1px; }
+.main {
+    background-color: #f5f7f9;
+}
+.kpi-metric {
+    background-color: #FC8019 !important;
+    color: white !important;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.kpi-label {
+    font-size: 0.9rem;
+    color: #ffffff !important;
+    opacity: 0.9;
+    font-weight: 400;
+}
+[data-testid="stHeader"] {
+    background-color: rgba(0,0,0,0);
+}
+h1, h2, h3 {
+    color: #3D4152;
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- DATA ENGINE ---
 @st.cache_data
@@ -165,3 +183,4 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
