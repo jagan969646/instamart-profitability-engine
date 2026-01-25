@@ -11,41 +11,45 @@ st.set_page_config(page_title="Instamart Strategy Engine", page_icon="🧡", lay
 # --- PATHS ---
 BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
+# Matching the exact case seen in your GitHub screenshot
+LOGO_PATH = os.path.join(BASE_DIR, "Logo.png") 
+SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 
 # --- CUSTOM EXECUTIVE STYLING ---
-# CUSTOM EXECUTIVE STYLING
-# -----------------------------
 st.markdown("""
 <style>
-.main {
-    background-color: #f5f7f9;
-}
-.kpi-metric {
-    background-color: #FC8019 !important;
-    color: white !important;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-.kpi-label {
-    font-size: 0.9rem;
-    color: #ffffff !important;
-    opacity: 0.9;
-    font-weight: 400;
-}
-[data-testid="stHeader"] {
-    background-color: rgba(0,0,0,0);
-}
-h1, h2, h3 {
-    color: #3D4152;
-}
+    .stApp { background-color: #f8f9fb; }
+    
+    /* Header & Branding Styling */
+    .main-title {
+        color: #3D4152;
+        font-weight: 800;
+        letter-spacing: -1px;
+        margin: 0;
+        font-size: 2.2rem;
+    }
+
+    /* KPI Metric Styling */
+    .kpi-metric {
+        background-color: #FC8019 !important;
+        color: white !important;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    [data-testid="stMetricValue"] {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        color: #3D4152;
+    }
+
+    /* Customizing Headings */
+    h1, h2, h3 { color: #3D4152; }
 </style>
 """, unsafe_allow_html=True)
-
 
 # --- DATA ENGINE ---
 @st.cache_data
@@ -64,7 +68,7 @@ def load_and_enrich():
 
     df['order_time'] = pd.to_datetime(df['order_time'])
     
-    # Financial Logic
+    # Financial Logic (Unit Economics)
     df['commission'] = df['order_value'] * 0.18
     df['ad_revenue'] = df['order_value'] * 0.05
     df['opex'] = 12 
@@ -73,9 +77,14 @@ def load_and_enrich():
 
 df = load_and_enrich()
 
-# --- SIDEBAR: STRATEGIC LEVERS ---
+# --- SIDEBAR: CONTROL TOWER ---
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png", width=100)
+    # Top of Sidebar Branding
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=120)
+    else:
+        st.image(SWIGGY_URL, width=120)
+        
     st.title("Control Tower")
     
     zones = st.multiselect("Geographic Clusters", options=df['zone'].unique(), default=df['zone'].unique())
@@ -85,7 +94,7 @@ with st.sidebar:
     fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 5)
     disc_opt = st.slider("Discount Optimization (%)", 0, 100, 20)
     
-    st.info("Simulating impact on Contribution Margin 2 (CM2).")
+    st.info("Simulating impact on Contribution Margin (CM).")
 
 # --- SIMULATION ENGINE ---
 f_df = df[df['zone'].isin(zones)].copy()
@@ -93,9 +102,18 @@ f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
 
-# --- HEADER ---
-st.markdown("<h1 class='main-title'>🧡 Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
-st.caption(f"Hyperlocal Analytics Ecosystem • Active Clusters: {len(zones)}")
+# --- MAIN HEADER SECTION ---
+head_col1, head_col2 = st.columns([1, 6])
+with head_col1:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=100)
+    else:
+        st.image(SWIGGY_URL, width=100)
+with head_col2:
+    st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
+    st.markdown("#### 🚀 Target: Positive Contribution Margin by June 2026")
+
+st.divider()
 
 # --- EXECUTIVE KPI ROW ---
 m1, m2, m3, m4 = st.columns(4)
@@ -120,7 +138,6 @@ with t1:
     col_a, col_b = st.columns([2, 1])
     with col_a:
         st.subheader("Unit Economics Breakdown")
-        # Creating a Waterfall-style analysis
         metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
         vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
                 -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
@@ -171,7 +188,6 @@ with t3:
 
 with t4:
     st.subheader("Predictive Demand Sensing (XGBoost Inferred)")
-    # Simulating a forecast vs actuals chart
     f_df['forecast'] = f_df['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
     hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value', 'forecast']].sum().reset_index()
     
