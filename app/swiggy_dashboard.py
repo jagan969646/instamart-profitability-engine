@@ -137,45 +137,64 @@ with head_col2:
 st.divider()
 
 # --- EXECUTIVE KPI ROW ---
-m1, m2, m3, m4 = st.columns(4)
+# -----------------------------
+# KPI ROW (ENHANCED ORANGE BOXES)
+# -----------------------------
+total_gov = filtered_df['order_value'].sum()
+avg_cm = filtered_df['net_profit'].mean()
+burn_rate = (filtered_df['discount'].sum() / total_gov) * 100
+orders = len(filtered_df)
 
-with m1:
+prev_avg_cm = df['gross_margin'].mean()  # baseline for simulation delta
+delta_cm = avg_cm - prev_avg_cm
+
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+
+with kpi1:
     st.markdown(
-        kpi_card("Total GOV",
-                 f"₹{f_df['order_value'].sum()/1e6:.2f}M",
-                 "▲ 12% vs LW",
-                 "#D1FAE5"),
+        f'''
+        <div class="kpi-metric">
+            ₹{total_gov/1e6:.2f}M
+            <div class="kpi-label">Total GOV</div>
+            <div style="font-size:0.85rem; opacity:0.85;">▲ 12% vs LW</div>
+        </div>
+        ''',
         unsafe_allow_html=True
     )
 
-with m2:
-    avg_p = f_df['net_profit'].mean()
-    delta = avg_p - df['gross_margin'].mean()
+with kpi2:
     st.markdown(
-        kpi_card("Net Profit / Order",
-                 f"₹{avg_p:.2f}",
-                 f"Sim Δ ₹{delta:.2f}",
-                 "#E0F2FE"),
+        f'''
+        <div class="kpi-metric">
+            ₹{avg_cm:.2f}
+            <div class="kpi-label">Avg Net Profit / Order</div>
+            <div style="font-size:0.85rem; opacity:0.85;">Sim Δ ₹{delta_cm:.2f}</div>
+        </div>
+        ''',
         unsafe_allow_html=True
     )
 
-with m3:
-    prof_rate = (f_df['net_profit'] > 0).mean() * 100
+with kpi3:
     st.markdown(
-        kpi_card("Order Profitability",
-                 f"{prof_rate:.1f}%",
-                 "🎯 Target: 70%",
-                 "#FEF3C7"),
+        f'''
+        <div class="kpi-metric">
+            {burn_rate:.1f}%
+            <div class="kpi-label">Discount Burn Rate</div>
+            <div style="font-size:0.85rem; opacity:0.85;">▼ 3.2% Improvement</div>
+        </div>
+        ''',
         unsafe_allow_html=True
     )
 
-with m4:
-    burn = (f_df['discount'].sum() / f_df['order_value'].sum()) * 100
+with kpi4:
     st.markdown(
-        kpi_card("Burn Rate",
-                 f"{burn:.1f}%",
-                 "▼ 3.2% Improvement",
-                 "#DCFCE7"),
+        f'''
+        <div class="kpi-metric">
+            {orders:,}
+            <div class="kpi-label">Orders Modeled</div>
+            <div style="font-size:0.85rem; opacity:0.85;">🎯 Target: 10,000</div>
+        </div>
+        ''',
         unsafe_allow_html=True
     )
 
@@ -238,3 +257,4 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
