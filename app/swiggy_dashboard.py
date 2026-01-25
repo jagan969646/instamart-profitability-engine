@@ -17,7 +17,7 @@ st.set_page_config(
 # PATHS
 # -----------------------------
 BASE_DIR = os.path.dirname(__file__)
-DATA_PATH = os.path.join(BASE_DIR, "instamart_simulated_results.csv")
+DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 LOGO_PATH = os.path.join(BASE_DIR, "Logo.png")
 
 # -----------------------------
@@ -190,6 +190,7 @@ with col_a2:
         
 st.markdown("---")
 st.caption("Developed by Jagadeesh N | Instamart Strategic Decision Engine")
+
 
 
 
