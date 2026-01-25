@@ -27,16 +27,17 @@ st.markdown("""
         font-size: 2.2rem;
     }
 
-    .kpi-value-box {
+    .kpi-subbox {
+    margin-top: 8px;
     background-color: #000000;
-    color: #22C55E; /* Green */
-    padding: 6px 14px;
+    color: #22C55E;  /* green */
+    padding: 6px 10px;
     border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
     display: inline-block;
-    font-size: 1.7rem;
-    font-weight: 800;
-    margin-bottom: 6px;
 }
+
 
 
     .kpi-metric {
@@ -149,7 +150,7 @@ with head_col2:
 st.divider()
 
 # -----------------------------
-# KPI ROW (BLACK VALUE BOX + GREEN TEXT)
+# KPI ROW (BLACK SUB-BOX BELOW KPI)
 # -----------------------------
 total_gov = f_df['order_value'].sum()
 avg_cm = f_df['net_profit'].mean()
@@ -164,36 +165,36 @@ kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 with kpi1:
     st.markdown(f'''
     <div class="kpi-metric">
-        <div class="kpi-value-box">₹{total_gov/1e6:.2f}M</div>
+        ₹{total_gov/1e6:.2f}M
         <div class="kpi-label">Total GOV</div>
-        <div style="font-size:0.85rem; opacity:0.85;">▲ 12% vs LW</div>
+        <div class="kpi-subbox">▲ 12% vs LW</div>
     </div>
     ''', unsafe_allow_html=True)
 
 with kpi2:
     st.markdown(f'''
     <div class="kpi-metric">
-        <div class="kpi-value-box">₹{avg_cm:.2f}</div>
+        ₹{avg_cm:.2f}
         <div class="kpi-label">Avg Net Profit / Order</div>
-        <div style="font-size:0.85rem; opacity:0.85;">Sim Δ ₹{delta_cm:.2f}</div>
+        <div class="kpi-subbox">Sim Δ ₹{delta_cm:.2f}</div>
     </div>
     ''', unsafe_allow_html=True)
 
 with kpi3:
     st.markdown(f'''
     <div class="kpi-metric">
-        <div class="kpi-value-box">{burn_rate:.1f}%</div>
+        {burn_rate:.1f}%
         <div class="kpi-label">Discount Burn Rate</div>
-        <div style="font-size:0.85rem; opacity:0.85;">▼ 3.2% Improvement</div>
+        <div class="kpi-subbox">▼ 3.2% Improvement</div>
     </div>
     ''', unsafe_allow_html=True)
 
 with kpi4:
     st.markdown(f'''
     <div class="kpi-metric">
-        <div class="kpi-value-box">{orders:,}</div>
+        {orders:,}
         <div class="kpi-label">Orders Modeled</div>
-        <div style="font-size:0.85rem; opacity:0.85;">🎯 Target: 10,000</div>
+        <div class="kpi-subbox">🎯 Target: 10,000</div>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -257,6 +258,7 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
 
 
