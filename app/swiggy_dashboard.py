@@ -122,6 +122,12 @@ with st.sidebar:
     st.title("Control Tower")
     zones = st.multiselect("Geographic Clusters", df['zone'].unique(), df['zone'].unique())
 
+    weather_filter = st.multiselect(
+    "🌦️ Weather Condition",
+    options=df['weather'].unique(),
+    default=df['weather'].unique()
+)
+
     st.divider()
     st.subheader("🛠️ Profitability Simulator")
     fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 5)
@@ -269,6 +275,7 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
 
 
