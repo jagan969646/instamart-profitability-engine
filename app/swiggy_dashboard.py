@@ -11,37 +11,55 @@ st.set_page_config(page_title="Instamart Strategy Engine", page_icon="🧡", lay
 # --- PATHS ---
 BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
-SWIGGY_LOGO = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 
 # --- CUSTOM EXECUTIVE STYLING ---
-st.markdown(f"""
+st.markdown("""
 <style>
-    .stApp {{ background-color: #f8f9fb; }}
-    [data-testid="stMetricValue"] {{ font-size: 1.8rem !important; font-weight: 700 !important; color: #3D4152; }}
-    
-    /* Branded Header Styling */
-    .header-container {{
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 10px 0px;
-    }}
-    .main-title {{ 
-        color: #3D4152; 
-        font-weight: 800; 
-        letter-spacing: -1px; 
-        margin: 0;
-    }}
-    
-    /* Control Tower Styling */
-    .sidebar-title {{
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #FC8019;
-        margin-bottom: 20px;
-    }}
+.main {
+    background-color: #f5f7f9;
+}
+.kpi-metric {
+    background-color: #FC8019 !important;
+    color: white !important;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.kpi-label {
+    font-size: 0.9rem;
+    color: #ffffff !important;
+    opacity: 0.9;
+    font-weight: 400;
+}
+[data-testid="stHeader"] {
+    background-color: rgba(0,0,0,0);
+}
+h1, h2, h3 {
+    color: #3D4152;
+}
 </style>
 """, unsafe_allow_html=True)
+
+# HEADER SECTION
+# -----------------------------
+col_logo, col_text = st.columns([1, 5])
+
+with col_logo:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=120)
+    else:
+        st.subheader(":orange[SWIGGY]")
+
+with col_text:
+    st.title("Instamart Strategic Decision Engine")
+    st.markdown("#### 🚀 Target: Positive Contribution Margin by June 2026")
+
+st.divider()
+
 
 # --- DATA ENGINE ---
 @st.cache_data
@@ -51,12 +69,16 @@ def load_and_enrich():
         st.stop()
     
     df = pd.read_csv(DATA_PATH)
+    
+    # Validation & Schema Guard
     required = {'delivery_fee': 15, 'delivery_cost': 40, 'discount': 20, 
                 'order_value': 450, 'category': 'FMCG', 'freshness_hrs_left': 24}
     for col, val in required.items():
         if col not in df.columns: df[col] = val
 
     df['order_time'] = pd.to_datetime(df['order_time'])
+    
+    # Financial Logic
     df['commission'] = df['order_value'] * 0.18
     df['ad_revenue'] = df['order_value'] * 0.05
     df['opex'] = 12 
@@ -67,15 +89,16 @@ df = load_and_enrich()
 
 # --- SIDEBAR: STRATEGIC LEVERS ---
 with st.sidebar:
-    # Top of Control Centre Logo
-    st.image(SWIGGY_LOGO, width=80)
-    st.markdown("<p class='sidebar-title'>Control Tower</p>", unsafe_allow_html=True)
+    st.image("https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png", width=100)
+    st.title("Control Tower")
     
     zones = st.multiselect("Geographic Clusters", options=df['zone'].unique(), default=df['zone'].unique())
+    
     st.divider()
     st.subheader("🛠️ Profitability Simulator")
     fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 5)
     disc_opt = st.slider("Discount Optimization (%)", 0, 100, 20)
+    
     st.info("Simulating impact on Contribution Margin 2 (CM2).")
 
 # --- SIMULATION ENGINE ---
@@ -84,13 +107,8 @@ f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
 
-# --- HEADER WITH LOGO ---
-col_logo, col_title = st.columns([0.1, 0.9])
-with col_logo:
-    st.image(SWIGGY_LOGO, width=60)
-with col_title:
-    st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
-
+# --- HEADER ---
+st.markdown("<h1 class='main-title'>🧡 Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
 st.caption(f"Hyperlocal Analytics Ecosystem • Active Clusters: {len(zones)}")
 
 # --- EXECUTIVE KPI ROW ---
@@ -116,6 +134,7 @@ with t1:
     col_a, col_b = st.columns([2, 1])
     with col_a:
         st.subheader("Unit Economics Breakdown")
+        # Creating a Waterfall-style analysis
         metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
         vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
                 -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
@@ -130,7 +149,7 @@ with t1:
             increasing = {"marker":{"color":"#60B246"}},
             totals = {"marker":{"color":"#FC8019"}}
         ))
-        fig_water.update_layout(template="simple_white", margin=dict(l=20, r=20, t=20, b=20))
+        fig_water.update_layout(title="Average Unit Economics (Per Order)", template="simple_white")
         st.plotly_chart(fig_water, use_container_width=True)
         
     with col_b:
@@ -166,6 +185,7 @@ with t3:
 
 with t4:
     st.subheader("Predictive Demand Sensing (XGBoost Inferred)")
+    # Simulating a forecast vs actuals chart
     f_df['forecast'] = f_df['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
     hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value', 'forecast']].sum().reset_index()
     
