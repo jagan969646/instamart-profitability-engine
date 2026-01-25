@@ -136,7 +136,7 @@ st.divider()
 m1, m2, m3, m4 = st.columns(4)
 
 with m1:
-    st.markdown(kpi_card("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M"), unsafe_allow_html=True)
+     st.metric("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M", "12% vs LW"), unsafe_allow_html=True)
 
 with m2:
     avg_p = f_df['net_profit'].mean()
@@ -220,4 +220,5 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
