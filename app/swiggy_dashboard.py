@@ -18,7 +18,7 @@ SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.s
 # --- CUSTOM EXECUTIVE STYLING ---
 st.markdown("""
 <style>
-    .stApp { background-color: #f8f9fb; }
+    .stApp { background-color: #f5f7f9; }
     
     /* Header & Branding Styling */
     .main-title {
@@ -28,18 +28,16 @@ st.markdown("""
         margin: 0;
         font-size: 2.2rem;
     }
+.kpi-label {
+    font-size: 0.9rem;
+    color: #ffffff !important;
+    opacity: 0.9;
+    font-weight: 400;
+}
+[data-testid="stHeader"] {
+    background-color: rgba(0,0,0,0);
+}
 
-    /* KPI Metric Styling */
-    .kpi-metric {
-        background-color: #FC8019 !important;
-        color: white !important;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(252, 128, 25, 0.2);
-        text-align: center;
-        font-weight: bold;
-    }
-    
     [data-testid="stMetricValue"] {
         font-size: 1.8rem !important;
         font-weight: 700 !important;
@@ -199,3 +197,4 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
