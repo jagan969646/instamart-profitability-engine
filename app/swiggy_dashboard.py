@@ -29,7 +29,6 @@ st.markdown("""
         font-size: 2.2rem;
     }
 .kpi-label {
-    background-color: #FC8019 !important;
     font-size: 0.9rem;
     color: #ffffff !important;
     opacity: 0.9;
@@ -198,6 +197,7 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
 
 
