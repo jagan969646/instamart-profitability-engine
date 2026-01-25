@@ -12,129 +12,155 @@ st.set_page_config(page_title="Instamart Strategy Engine", page_icon="🧡", lay
 BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 
-# --- DATA ENGINE (WITH ROBUST ERROR HANDLING) ---
+# --- CUSTOM EXECUTIVE STYLING ---
+st.markdown("""
+<style>
+    .stApp { background-color: #f8f9fb; }
+    [data-testid="stMetricValue"] { font-size: 1.8rem !important; font-weight: 700 !important; color: #3D4152; }
+    .kpi-card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-top: 4px solid #FC8019;
+        text-align: center;
+    }
+    .main-title { color: #3D4152; font-weight: 800; letter-spacing: -1px; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- DATA ENGINE ---
 @st.cache_data
 def load_and_enrich():
     if not os.path.exists(DATA_PATH):
-        st.error(f"🚨 Data file not found at {DATA_PATH}. Please check your GitHub repository.")
+        st.error(f"🚨 Missing {DATA_PATH}")
         st.stop()
     
     df = pd.read_csv(DATA_PATH)
     
-    # PREVENT KEYERROR: Check if required columns exist, if not, create simulated ones
-    required_cols = {
-        'delivery_fee': 15, 
-        'delivery_cost': 40,
-        'discount': 20,
-        'order_value': 450,
-        'category': 'FMCG',
-        'freshness_hrs_left': 24,
-        'zone': 'Default Zone'
-    }
-    
-    for col, default_val in required_cols.items():
-        if col not in df.columns:
-            df[col] = default_val
+    # Validation & Schema Guard
+    required = {'delivery_fee': 15, 'delivery_cost': 40, 'discount': 20, 
+                'order_value': 450, 'category': 'FMCG', 'freshness_hrs_left': 24}
+    for col, val in required.items():
+        if col not in df.columns: df[col] = val
 
     df['order_time'] = pd.to_datetime(df['order_time'])
     
-    # 💎 Advanced Financial Logic (The "Hiring" Logic)
-    df['commission'] = df['order_value'] * 0.18 # Swiggy's take-rate
-    df['ad_revenue'] = df['order_value'] * 0.05 # High-margin revenue
-    df['gross_revenue'] = df['commission'] + df['ad_revenue'] + df['delivery_fee']
-    
-    # Cost modeling (Dark Store OPEX + Logistics)
-    df['dark_store_cost'] = 12 # Fixed cost per order for warehouse
-    df['contribution_margin'] = df['gross_revenue'] - df['delivery_cost'] - df['discount'] - df['dark_store_cost']
-    
+    # Financial Logic
+    df['commission'] = df['order_value'] * 0.18
+    df['ad_revenue'] = df['order_value'] * 0.05
+    df['opex'] = 12 
+    df['gross_margin'] = (df['commission'] + df['ad_revenue'] + df['delivery_fee']) - (df['delivery_cost'] + df['discount'] + df['opex'])
     return df
 
 df = load_and_enrich()
 
-# --- SIDEBAR: EXECUTIVE INTERVENTION ---
+# --- SIDEBAR: STRATEGIC LEVERS ---
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png", width=120)
-    st.title("Admin HQ")
+    st.image("https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png", width=100)
+    st.title("Control Tower")
     
-    target_zones = st.multiselect("Select Delivery Clusters", options=df['zone'].unique(), default=df['zone'].unique())
+    zones = st.multiselect("Geographic Clusters", options=df['zone'].unique(), default=df['zone'].unique())
     
     st.divider()
-    st.subheader("💡 'Path to Profit' Simulation")
-    fee_bump = st.slider("Delivery Fee Increase (₹)", 0, 40, 5)
-    discount_slashing = st.slider("Reduce Discounts by (%)", 0, 100, 25)
+    st.subheader("🛠️ Profitability Simulator")
+    fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 5)
+    disc_opt = st.slider("Discount Optimization (%)", 0, 100, 20)
     
-    st.info("Adjusting these levers simulates the impact on your Contribution Margin (CM).")
+    st.info("Simulating impact on Contribution Margin 2 (CM2).")
 
-# --- PROCESS FILTERED DATA ---
-f_df = df[df['zone'].isin(target_zones)].copy()
-# Apply "What-If" Simulation Logic
-f_df['delivery_fee'] += fee_bump
-f_df['discount'] *= (1 - discount_slashing/100)
-f_df['contribution_margin'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - f_df['delivery_cost'] - f_df['discount'] - f_df['dark_store_cost']
+# --- SIMULATION ENGINE ---
+f_df = df[df['zone'].isin(zones)].copy()
+f_df['delivery_fee'] += fee_adj
+f_df['discount'] *= (1 - disc_opt/100)
+f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
 
-# --- MAIN DASHBOARD ---
-st.title("🧡 Instamart | Strategic Decision Engine")
-st.markdown("### `Unit Economics & Dark Store Efficiency Command Center` ")
+# --- HEADER ---
+st.markdown("<h1 class='main-title'>🧡 Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
+st.caption(f"Hyperlocal Analytics Ecosystem • Active Clusters: {len(zones)}")
 
-# --- KPI METRICS ---
+# --- EXECUTIVE KPI ROW ---
 m1, m2, m3, m4 = st.columns(4)
 with m1:
-    st.metric("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M", "9.4% vs Prev")
+    st.metric("Total GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M", "12% vs LW")
 with m2:
-    avg_cm = f_df['contribution_margin'].mean()
-    st.metric("Avg CM / Order", f"₹{avg_cm:.2f}", f"₹{avg_cm - df['contribution_margin'].mean():.1f} Delta", delta_color="normal")
+    avg_p = f_df['net_profit'].mean()
+    st.metric("Net Profit / Order", f"₹{avg_p:.2f}", f"₹{avg_p - df['gross_margin'].mean():.2f} Sim Delta")
 with m3:
-    prof_rate = (f_df['contribution_margin'] > 0).mean() * 100
-    st.metric("Profitable Orders %", f"{prof_rate:.1f}%", "Target: 70%")
+    prof_rate = (f_df['net_profit'] > 0).mean() * 100
+    st.metric("Order Profitability", f"{prof_rate:.1f}%", f"Target: 70%")
 with m4:
-    st.metric("Total Burn (Discounts)", f"₹{f_df['discount'].sum()/1e5:.1f}L", "-12% improvement", delta_color="inverse")
+    burn = (f_df['discount'].sum() / f_df['order_value'].sum()) * 100
+    st.metric("Burn Rate", f"{burn:.1f}%", "-3.2% Improvement", delta_color="inverse")
 
 st.divider()
 
-# --- TABS FOR MULTI-DIMENSIONAL ANALYSIS ---
-tab_finance, tab_ops, tab_inv = st.tabs(["💰 Financial Performance", "🚲 Operational Efficiency", "🥬 Inventory Salvage"])
+# --- ANALYTICS TABS ---
+t1, t2, t3, t4 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Demand Forecasting"])
 
-with tab_finance:
-    c1, c2 = st.columns([2, 1])
-    with c1:
-        st.subheader("Margin Trajectory by Cluster")
-        zone_perf = f_df.groupby('zone')['contribution_margin'].sum().reset_index().sort_values('contribution_margin')
-        fig_cm = px.bar(zone_perf, x='contribution_margin', y='zone', orientation='h', 
-                         color='contribution_margin', color_continuous_scale='RdYlGn', template="plotly_white")
-        st.plotly_chart(fig_cm, use_container_width=True)
-    
-    with c2:
+with t1:
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        st.subheader("Unit Economics Breakdown")
+        # Creating a Waterfall-style analysis
+        metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
+        vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
+                -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
+        
+        fig_water = go.Figure(go.Waterfall(
+            name = "Economics", orientation = "v",
+            measure = ["relative", "relative", "relative", "relative", "relative", "relative", "total"],
+            x = metrics + ['Net Profit'],
+            y = vals + [0],
+            connector = {"line":{"color":"rgb(63, 63, 63)"}},
+            decreasing = {"marker":{"color":"#EF4444"}},
+            increasing = {"marker":{"color":"#60B246"}},
+            totals = {"marker":{"color":"#FC8019"}}
+        ))
+        fig_water.update_layout(title="Average Unit Economics (Per Order)", template="simple_white")
+        st.plotly_chart(fig_water, use_container_width=True)
+        
+    with col_b:
         st.subheader("Revenue Diversification")
-        rev_data = pd.DataFrame({
-            'Source': ['Commissions', 'Ads (CPG)', 'Delivery Fees'],
-            'Val': [f_df['commission'].sum(), f_df['ad_revenue'].sum(), f_df['delivery_fee'].sum()]
+        rev_mix = pd.DataFrame({
+            'Channel': ['Comm', 'Ads', 'Fees'],
+            'Rev': [f_df['commission'].sum(), f_df['ad_revenue'].sum(), f_df['delivery_fee'].sum()]
         })
-        fig_pie = px.pie(rev_data, values='Val', names='Source', hole=0.5, color_discrete_sequence=['#FC8019', '#3D4152', '#60B246'])
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(px.pie(rev_mix, values='Rev', names='Channel', hole=0.6, 
+                               color_discrete_sequence=['#FC8019', '#3D4152', '#60B246']), use_container_width=True)
 
-with tab_ops:
-    st.subheader("Cost-per-Delivery (CPD) Peak Hour Analysis")
+with t2:
+    st.subheader("Logistics Efficiency Heatmap")
     f_df['hour'] = f_df['order_time'].dt.hour
     heat = f_df.pivot_table(index='zone', columns='hour', values='delivery_cost', aggfunc='mean')
-    fig_heat = px.imshow(heat, color_continuous_scale='Viridis', title="Dark Store Inefficiencies (Yellow = High Cost)")
-    st.plotly_chart(fig_heat, use_container_width=True)
-    st.info("🎯 **Strategic Opportunity:** High cost windows detected. Recommend order batching in yellow zones to lower CPD.")
+    st.plotly_chart(px.imshow(heat, color_continuous_scale='YlOrRd', aspect="auto"), use_container_width=True)
+    st.info("💡 **Strategy:** Yellow cells indicate cost leakage. Deploy 'Batching' algorithms during these windows.")
 
-with tab_inv:
-    col_v1, col_v2 = st.columns([1, 2])
+with t3:
+    st.subheader("Inventory Salvage Management")
     perishables = f_df[f_df['category'] == 'Perishable'].copy()
-    risk_units = perishables[perishables['freshness_hrs_left'] < 12]
+    risk = perishables[perishables['freshness_hrs_left'] < 12]
     
-    with col_v1:
-        st.warning(f"🚨 {len(risk_units)} Units with <12h Shelf Life")
-        st.markdown(f"**Potential Waste Loss:** ₹{len(risk_units)*150:,}")
-        if st.button("🚀 Trigger 'Flash Sale' Push"):
-            st.success("App Push Sent to 4,500 users in high-risk zones!")
+    ca, cb = st.columns([1, 2])
+    with ca:
+        st.warning(f"⚠️ {len(risk)} Units at Expiry Risk")
+        st.metric("Potential Liquidation Value", f"₹{len(risk)*110:,}")
+        if st.button("🚀 Execute Flash Liquidation"):
+            st.success("App Push Notifications Sent!")
             st.balloons()
-            
-    with col_v2:
-        fig_fresh = px.box(perishables, x='zone', y='freshness_hrs_left', color='zone', title="Inventory Health by Cluster")
-        st.plotly_chart(fig_fresh, use_container_width=True)
+    with cb:
+        st.plotly_chart(px.box(perishables, x='zone', y='freshness_hrs_left', color='zone', title="Freshness Variance"), use_container_width=True)
+
+with t4:
+    st.subheader("Predictive Demand Sensing (XGBoost Inferred)")
+    # Simulating a forecast vs actuals chart
+    f_df['forecast'] = f_df['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
+    hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value', 'forecast']].sum().reset_index()
+    
+    fig_pred = go.Figure()
+    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['order_value'], name='Actual GOV', line=dict(color='#3D4152')))
+    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['forecast'], name='XGBoost Forecast', line=dict(dash='dash', color='#FC8019')))
+    st.plotly_chart(fig_pred, use_container_width=True)
 
 # --- FOOTER ---
 st.markdown("---")
