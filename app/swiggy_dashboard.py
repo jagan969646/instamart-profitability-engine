@@ -12,9 +12,8 @@ st.set_page_config(page_title="Instamart Strategy Engine", page_icon="🧡", lay
 # --- PATHS ---
 BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
-LOGO_PATH = os.path.join(BASE_DIR, "Logo.png")
+LOGO_PATH = os.path.join(BASE_DIR, "Logo.png") 
 SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
-# Matches exactly: JagadeeshN_SwiggyInstamart_Profitability_CaseStudy.pdf
 PDF_PATH = os.path.join(BASE_DIR, "JagadeeshN_SwiggyInstamart_Profitability_CaseStudy.pdf")
 
 # --- CUSTOM STYLING ---
@@ -190,4 +189,5 @@ with t6:
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Business Analytics Portfolio")
+
 
