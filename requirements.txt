@@ -12,3 +12,8 @@ seaborn
 matplotlib
 scikit-learn
 xgboost
+streamlit
+pandas
+plotly
+numpy
+statsmodels
