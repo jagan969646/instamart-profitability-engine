@@ -11,6 +11,7 @@ st.set_page_config(page_title="INSTAMART | Singularity v8.0", page_icon="🧡", 
 
 # --- PATH & ASSET RECOVERY ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Check for data in 'app/' folder based on your GitHub structure
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 
@@ -40,6 +41,7 @@ def load_and_engineer():
     if os.path.exists(DATA_PATH):
         df = pd.read_csv(DATA_PATH)
     else:
+        # Emergency Fallback Data
         zones = ['Koramangala', 'Indiranagar', 'HSR Layout', 'Whitefield', 'Jayanagar']
         categories = ['Perishables', 'FMCG', 'Munchies', 'Beverages', 'Personal Care']
         data = {
@@ -75,7 +77,6 @@ with st.sidebar:
     aov_adj = st.slider("AOV Expansion (₹)", 0, 200, 30)
     surge_adj = st.slider("Dynamic Surge Alpha (₹)", 0, 100, 20)
     disc_cut = st.slider("Subsidy Optimization (%)", 0, 100, 15)
-    
     st.info("System optimized for profitability v8.0")
 
 # --- PREDICTIVE PHYSICS ---
@@ -90,6 +91,11 @@ f_df['order_value'] += aov_adj
 f_df['delivery_fee'] += surge_adj
 f_df['discount'] *= (1 - disc_cut/100)
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + 15.0)
+
+# --- SAFETY: SANITIZE SIZE COLUMN ---
+# Plotly scatter 'size' must be > 0. We'll clip at 1 to prevent ValueErrors.
+f_df['abs_order_value'] = f_df['order_value'].clip(lower=1)
+f_df['abs_delivery_cost'] = f_df['delivery_cost'].clip(lower=1)
 
 # --- MAIN INTERFACE ---
 st.markdown("<h1 style='color: #FC8019;'>INSTAMART <span style='color:#FFF; font-weight:100;'>SINGULARITY v8.0</span></h1>", unsafe_allow_html=True)
@@ -160,7 +166,8 @@ with t3:
         st.plotly_chart(fig7, use_container_width=True)
     with col8:
         st.write("### 8. High-Risk Inventory Scatter")
-        fig8 = px.scatter(f_df, x="freshness_hrs_left", y="order_value", size="delivery_cost", color="zone", hover_name="category")
+        # Sanitize Size Column for Chart 8
+        fig8 = px.scatter(f_df, x="freshness_hrs_left", y="order_value", size="abs_delivery_cost", color="zone", hover_name="category")
         fig8.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig8, use_container_width=True)
     with col9:
@@ -179,7 +186,8 @@ with t4:
         st.plotly_chart(fig10, use_container_width=True)
     with col11:
         st.write("### 11. Customer Satisfaction vs. Profit")
-        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="order_value")
+        # Sanitize Size Column for Chart 11
+        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="abs_order_value")
         fig11.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig11, use_container_width=True)
     with col12:
