@@ -19,8 +19,6 @@ st.markdown("""
 <style>
     .stApp { background-color: #121212; }
     .main-title { color: #FC8019; font-weight: 800; font-size: 2.5rem; margin-bottom: 0px; }
-    
-    /* KPI Boxes */
     .kpi-metric {
         background-color: #FC8019;
         color: white;
@@ -32,8 +30,6 @@ st.markdown("""
         box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     }
     .kpi-metric small { font-weight: 400; font-size: 0.85rem; display: block; margin-top: 5px; opacity: 0.9; }
-
-    /* The Black Box with Green Data */
     .data-box {
         background-color: #000000;
         border: 1px solid #333;
@@ -42,7 +38,7 @@ st.markdown("""
         margin-top: 20px;
     }
     .data-text {
-        color: #2ECC71; /* Green Data */
+        color: #2ECC71; 
         font-family: 'Courier New', monospace;
         font-size: 1.1rem;
         line-height: 1.6;
@@ -55,10 +51,16 @@ st.markdown("""
 @st.cache_data
 def load_data():
     if not os.path.exists(DATA_PATH):
-        st.error("🚨 Data file missing.")
+        st.error(f"🚨 File not found: {DATA_PATH}")
         st.stop()
     df = pd.read_csv(DATA_PATH)
-    df['order_time'] = pd.to_datetime(df['order_time'])
+    
+    # CRITICAL FIX: Clean column names (removes spaces and makes lowercase)
+    df.columns = df.columns.str.strip().str.lower()
+    
+    # Handle time if column exists
+    if 'order_time' in df.columns:
+        df['order_time'] = pd.to_datetime(df['order_time'])
     return df
 
 df = load_data()
@@ -71,7 +73,6 @@ with st.sidebar:
         st.image(SWIGGY_BRAND_URL, width=100)
     
     st.title("Control Tower")
-    
     st.subheader("🛠️ Simulator")
     fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 15)
     disc_opt = st.slider("Discount Reduction (%)", 0, 100, 25)
@@ -79,7 +80,16 @@ with st.sidebar:
     scenario = st.selectbox("Market Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
 
 # --- SIMULATION ENGINE ---
+# We use .get() or check columns to prevent crashes
 f_df = df.copy()
+
+# Ensure required columns exist, or create them with 0 if missing to avoid KeyError
+cols_needed = ['order_value', 'delivery_fee', 'discount', 'delivery_cost']
+for col in cols_needed:
+    if col not in f_df.columns:
+        st.error(f"❌ Missing column in CSV: '{col}'. Please check your file.")
+        st.stop()
+
 f_df['order_value'] += aov_boost
 f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
@@ -92,7 +102,8 @@ elif scenario == "IPL Match Night":
 f_df['commission'] = f_df['order_value'] * 0.18
 f_df['ad_revenue'] = f_df['order_value'] * 0.05
 f_df['opex'] = 12
-f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
+f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - \
+                     (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
 f_df['margin_pct'] = (f_df['net_profit'] / f_df['order_value']) * 100
 
 # --- HEADER ---
@@ -108,31 +119,25 @@ with k3: st.markdown(f'<div class="kpi-metric">{f_df["margin_pct"].mean():.1f}%<
 with k4: st.markdown(f'<div class="kpi-metric">{len(f_df):,}<small>Total Order Vol</small></div>', unsafe_allow_html=True)
 
 # --- BLACK BOX (GREEN DATA) ---
-st.markdown("""
+st.markdown(f"""
 <div class="data-box">
     <div class="data-text">
-        <span class="data-label">>> RUNNING SIMULATION...</span><br>
-        [REVENUE] Avg Comm: ₹{comm:.2f} | Ad Rev: ₹{ad:.2f} | Del. Fee: ₹{fee:.2f}<br>
-        [COSTS] Del. Cost: ₹{cost:.2f} | Disc: ₹{disc:.2f} | OPEX: ₹{opex:.2f}<br>
-        [FINAL] NET PROFIT PER ORDER: ₹{profit:.2f}
+        <span class="data-label">>> SIMULATION ACTIVE: {scenario.upper()}</span><br>
+        [REVENUE] Avg Comm: ₹{f_df['commission'].mean():.2f} | Ad Rev: ₹{f_df['ad_revenue'].mean():.2f} | Del. Fee: ₹{f_df['delivery_fee'].mean():.2f}<br>
+        [COSTS] Del. Cost: ₹{f_df['delivery_cost'].mean():.2f} | Disc: ₹{f_df['discount'].mean():.2f} | OPEX: ₹12.00<br>
+        [FINAL] NET PROFIT PER ORDER: ₹{f_df['net_profit'].mean():.2f}
     </div>
 </div>
-""".format(
-    comm=f_df['commission'].mean(),
-    ad=f_df['ad_revenue'].mean(),
-    fee=f_df['delivery_fee'].mean(),
-    cost=f_df['delivery_cost'].mean(),
-    disc=f_df['discount'].mean(),
-    opex=f_df['opex'].mean(),
-    profit=f_df['net_profit'].mean()
-), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # --- TABS ---
 t1, t2 = st.tabs(["📊 Financial Waterfall", "📖 Case Study Analysis"])
 
 with t1:
     metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
-    vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
+    vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
+            -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -12]
+    
     fig = go.Figure(go.Waterfall(
         orientation="v", x=metrics + ['Net Profit'], y=vals + [0],
         measure=["relative"]*6 + ["total"],
@@ -140,13 +145,13 @@ with t1:
         increasing={"marker":{"color":"#2ECC71"}},
         decreasing={"marker":{"color":"#FF4B4B"}}
     ))
-    fig.update_layout(template="plotly_dark", title="Unit Economics Breakdown")
+    fig.update_layout(template="plotly_dark", title="Unit Economics Breakdown (CM2)", margin=dict(l=20, r=20, t=50, b=20))
     st.plotly_chart(fig, use_container_width=True)
 
 with t2:
     st.header("Executive Case Study Summary")
-    st.info("**Strategy:** Optimization focuses on increasing AOV and reducing high-burn discounting.")
-    st.write("Full case study details are available via the PDF download in the sidebar.")
+    st.markdown("### Strategic Lever Impact")
+    st.write("Current simulation shows that AOV and Delivery Fee optimization are the fastest paths to CM2 positivity.")
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh N | Business Analyst Portfolio 2026")
