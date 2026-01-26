@@ -92,10 +92,29 @@ with st.sidebar:
     disc_cut = st.slider("Subsidy Optimization (%)", 0, 100, 15)
 
 # --- PREDICTIVE PHYSICS ---
+# --- PREDICTIVE PHYSICS ---
 f_df = df.copy()
 sit_map = {"Standard Ops": 1.0, "IPL Final Night": 2.2, "Heavy Rain Surge": 1.7, "Weekend Peak": 1.4}
 weather_map = {"Clear": 1.0, "Cloudy": 1.2, "Heavy Rain": 1.8, "Extreme Storm": 2.5}
 cost_mult = sit_map[situation] * weather_map[weather]
+
+# Simulation Math
+f_df['delivery_cost'] *= cost_mult
+f_df['order_value'] *= sit_map[situation]
+f_df['order_value'] += aov_adj
+f_df['delivery_fee'] += surge_adj
+f_df['discount'] *= (1 - disc_cut/100)
+
+# Net Profit calculation
+f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - \
+                     (f_df['delivery_cost'] + f_df['discount'] + 15.0)
+
+# --- CRITICAL FIX FOR VALUEERROR ---
+# 1. Ensure order_value is never 0 or negative for the 'size' parameter
+f_df['viz_size'] = f_df['order_value'].apply(lambda x: x if x > 0 else 1)
+
+# 2. Drop any remaining NaNs in visualization columns to prevent Plotly errors
+f_df = f_df.dropna(subset=['delivery_time_mins', 'customer_rating', 'net_profit', 'viz_size'])
 
 # Simulation Math
 f_df['delivery_cost'] *= cost_mult
@@ -173,3 +192,4 @@ with t4:
 
 st.markdown("---")
 st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | 2026")
+
