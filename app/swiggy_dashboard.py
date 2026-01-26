@@ -75,6 +75,8 @@ with st.sidebar:
     aov_adj = st.slider("AOV Expansion (₹)", 0, 200, 30)
     surge_adj = st.slider("Dynamic Surge Alpha (₹)", 0, 100, 20)
     disc_cut = st.slider("Subsidy Optimization (%)", 0, 100, 15)
+    
+    st.info("System optimized for profitability v8.0")
 
 # --- PREDICTIVE PHYSICS ---
 f_df = df.copy()
@@ -103,7 +105,7 @@ for col, (l, v) in zip([c1, c2, c3, c4], metrics):
     col.markdown(f'<div class="metric-card"><div class="metric-label">{l}</div><div class="metric-value">{v}</div></div>', unsafe_allow_html=True)
 
 st.write("")
-st.markdown(f"""<div class="terminal">> [LOG]: {situation.upper()} ACTIVE | WEATHER: {weather.upper()} ({weather_map[weather]}x Friction)</div>""", unsafe_allow_html=True)
+st.markdown(f"""<div class="terminal">> [LOG]: {situation.upper()} ACTIVE | WEATHER: {weather.upper()} ({weather_map[weather]}x Friction)<br>> [STATUS]: Engine online. Parameters synced.</div>""", unsafe_allow_html=True)
 
 # --- THE 12 CHART MATRIX ---
 t1, t2, t3, t4 = st.tabs(["💰 Financial Architecture", "📍 Zonal Analytics", "🥬 Inventory & Risk", "👥 Customer Experience"])
@@ -114,18 +116,20 @@ with t1:
         st.write("### 1. Revenue Elasticity Mix")
         fig1 = px.pie(values=[f_df['commission'].sum(), f_df['ad_rev'].sum(), f_df['delivery_fee'].sum()], 
                      names=['Commission', 'Ad Revenue', 'Delivery Fees'], hole=0.6, color_discrete_sequence=['#FC8019', '#3D4152', '#60B246'])
+        fig1.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig1, use_container_width=True)
     with col2:
         st.write("### 2. CM2 Waterfall")
         comps = ['Comm', 'Ads', 'Fees', 'Logistics', 'Discounts', 'OPEX']
         vals = [f_df['commission'].mean(), f_df['ad_rev'].mean(), f_df['delivery_fee'].mean(), -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -15.0]
         fig2 = go.Figure(go.Waterfall(orientation="v", x=comps+['Total'], y=vals+[sum(vals)], measure=["relative"]*6+["total"]))
-        fig2.update_layout(template="plotly_dark", height=350)
+        fig2.update_layout(template="plotly_dark", height=350, paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig2, use_container_width=True)
     with col3:
         st.write("### 3. Hourly GOV Momentum")
         hourly = f_df.groupby('hour')['order_value'].sum().reset_index()
         fig3 = px.line(hourly, x='hour', y='order_value', color_discrete_sequence=['#FC8019'], markers=True)
+        fig3.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig3, use_container_width=True)
 
 with t2:
@@ -134,14 +138,17 @@ with t2:
         st.write("### 4. Zonal Profit Heatmap")
         z_heat = f_df.pivot_table(index='zone', columns='hour', values='net_profit', aggfunc='mean')
         fig4 = px.imshow(z_heat, color_continuous_scale='RdYlGn')
+        fig4.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig4, use_container_width=True)
     with col5:
         st.write("### 5. Order Density by Zone")
         fig5 = px.sunburst(f_df, path=['zone', 'category'], values='order_value', color='order_value', color_continuous_scale='Oranges')
+        fig5.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig5, use_container_width=True)
     with col6:
         st.write("### 6. Profit Margin Distribution")
         fig6 = px.histogram(f_df, x="net_profit", nbins=40, color_discrete_sequence=['#2ECC71'], marginal="box")
+        fig6.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig6, use_container_width=True)
 
 with t3:
@@ -149,15 +156,18 @@ with t3:
     with col7:
         st.write("### 7. Freshness vs. Category")
         fig7 = px.box(f_df, x="category", y="freshness_hrs_left", color="category")
+        fig7.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
         st.plotly_chart(fig7, use_container_width=True)
     with col8:
         st.write("### 8. High-Risk Inventory Scatter")
         fig8 = px.scatter(f_df, x="freshness_hrs_left", y="order_value", size="delivery_cost", color="zone", hover_name="category")
+        fig8.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig8, use_container_width=True)
     with col9:
         st.write("### 9. Category Waste Exposure")
         waste = f_df[f_df['freshness_hrs_left'] < 10].groupby('category')['order_value'].sum().reset_index()
         fig9 = px.bar(waste, x='category', y='order_value', color='order_value', color_continuous_scale='Reds')
+        fig9.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig9, use_container_width=True)
 
 with t4:
@@ -165,19 +175,23 @@ with t4:
     with col10:
         st.write("### 10. Delivery Time Efficiency")
         fig10 = px.violin(f_df, y="delivery_time_mins", x="zone", box=True, color="zone")
+        fig10.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
         st.plotly_chart(fig10, use_container_width=True)
     with col11:
-        st.write("### 11. Customer Satisfaction (CSAT)")
-        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", trendline="ols")
+        st.write("### 11. Customer Satisfaction vs. Profit")
+        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="order_value")
+        fig11.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig11, use_container_width=True)
     with col12:
         st.write("### 12. Rating Distribution")
         fig12 = px.histogram(f_df, x="customer_rating", nbins=10, color_discrete_sequence=['#FC8019'])
+        fig12.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig12, use_container_width=True)
 
+    st.divider()
     if st.button("🚀 EXECUTE GLOBAL FLASH SALVAGE"):
         st.balloons()
-        st.success("SIMULATION COMPLETE: EBITDA Leak plugged. Push notifications dispatched.")
+        st.success("SIMULATION COMPLETE: EBITDA Leak plugged. Push notifications dispatched to local zones.")
 
 st.markdown("---")
-st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | SYSTEM TIME: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | 2026 | STATUS: DEPLOYED")
