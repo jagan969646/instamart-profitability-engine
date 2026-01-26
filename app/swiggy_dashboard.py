@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 LOGO_PATH = os.path.join(BASE_DIR, "Logo.png")
 SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
-# Ensure your PDF filename matches exactly what is on GitHub
+# Matches exactly: JagadeeshN_SwiggyInstamart_Profitability_CaseStudy.pdf
 PDF_PATH = os.path.join(BASE_DIR, "JagadeeshN_SwiggyInstamart_Profitability_CaseStudy.pdf")
 
 # --- CUSTOM STYLING ---
@@ -27,16 +27,6 @@ st.markdown("""
         letter-spacing: -1px;
         margin: 0;
         font-size: 2.2rem;
-    }
-    .kpi-subbox {
-        margin-top: 8px;
-        background-color: #000000;
-        color: #22C55E;
-        padding: 6px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
     }
     .kpi-metric {
         background-color: #FC8019;
@@ -55,6 +45,16 @@ st.markdown("""
         opacity: 0.9;
         font-weight: 500;
     }
+    .kpi-subbox {
+        margin-top: 8px;
+        background-color: #000000;
+        color: #22C55E;
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -64,14 +64,13 @@ def load_and_enrich():
     if not os.path.exists(DATA_PATH):
         st.error(f"🚨 Missing {DATA_PATH}")
         st.stop()
-
     df = pd.read_csv(DATA_PATH)
     required = {'delivery_fee': 15, 'delivery_cost': 40, 'discount': 20,
-                'order_value': 450, 'category': 'FMCG', 'freshness_hrs_left': 24}
+                'order_value': 450, 'category': 'FMCG', 'freshness_hrs_left': 24,
+                'weather': 'Clear', 'zone': 'Cluster A'}
     for col, val in required.items():
         if col not in df.columns:
             df[col] = val
-
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['commission'] = df['order_value'] * 0.18
     df['ad_revenue'] = df['order_value'] * 0.05
@@ -85,11 +84,7 @@ df = load_and_enrich()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=120)
-    else:
-        st.image(SWIGGY_URL, width=120)
-
+    st.image(SWIGGY_URL, width=120)
     st.title("Control Tower")
 
     # PDF Download Button
@@ -98,7 +93,7 @@ with st.sidebar:
             st.download_button(
                 label="📄 Download Case Study PDF",
                 data=f,
-                file_name="JagadeeshN_Swiggy_Instamart_Analysis.pdf",
+                file_name="JagadeeshN_Instamart_Analysis.pdf",
                 mime="application/pdf"
             )
 
@@ -113,7 +108,6 @@ with st.sidebar:
     st.subheader("⛈️ Contextual Scenarios")
     scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
     aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
-    marketing_spend = st.slider("Marketing Spend (₹)", 0, 50000, 0)
 
 # --- SIMULATION ENGINE ---
 f_df = df[df['zone'].isin(zones)].copy()
@@ -125,7 +119,7 @@ if scenario == "Heavy Rain":
 elif scenario == "IPL Match Night":
     f_df['order_value'] *= 1.15
 
-f_df['order_value'] += aov_boost + (marketing_spend/1000)
+f_df['order_value'] += aov_boost
 f_df['commission'] = f_df['order_value'] * 0.18
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (
     f_df['delivery_cost'] + f_df['discount'] + f_df['opex']
@@ -139,66 +133,60 @@ st.divider()
 # --- KPI ROW ---
 total_gov = f_df['order_value'].sum()
 avg_cm = f_df['net_profit'].mean()
-burn_rate = (f_df['discount'].sum() / total_gov) * 100
+burn_rate = (f_df['discount'].sum() / total_gov) * 100 if total_gov != 0 else 0
 orders = len(f_df)
 
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-with kpi1:
-    st.markdown(f'<div class="kpi-metric">₹{total_gov/1e6:.2f}M<div class="kpi-label">Total GOV</div><div class="kpi-subbox">Scale Metric</div></div>', unsafe_allow_html=True)
-with kpi2:
+k1, k2, k3, k4 = st.columns(4)
+with k1:
+    st.markdown(f'<div class="kpi-metric">₹{total_gov/1e6:.2f}M<div class="kpi-label">Total GOV</div><div class="kpi-subbox">Scale</div></div>', unsafe_allow_html=True)
+with k2:
     st.markdown(f'<div class="kpi-metric">₹{avg_cm:.2f}<div class="kpi-label">Avg Net Profit/Order</div><div class="kpi-subbox">CM2 Target</div></div>', unsafe_allow_html=True)
-with kpi3:
+with k3:
     st.markdown(f'<div class="kpi-metric">{burn_rate:.1f}%<div class="kpi-label">Discount Burn</div><div class="kpi-subbox">Efficiency</div></div>', unsafe_allow_html=True)
-with kpi4:
-    st.markdown(f'<div class="kpi-metric">{orders:,}<div class="kpi-label">Orders Modeled</div><div class="kpi-subbox">Sample Size</div></div>', unsafe_allow_html=True)
+with k4:
+    st.markdown(f'<div class="kpi-metric">{orders:,}<div class="kpi-label">Orders Modeled</div><div class="kpi-subbox">Sample</div></div>', unsafe_allow_html=True)
 
 # --- ANALYTICS TABS ---
-t1, t2, t3, t4, t5, t6 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Forecasting", "📈 Scenarios", "📖 Case Study"])
+t1, t2, t3, t4, t5, t6 = st.tabs(["📊 Financials", "🏍️ Ops", "🥬 Wastage", "🧠 Forecasting", "📈 Scenarios", "📖 Case Study"])
 
 with t1:
-    st.subheader("Unit Economics Breakdown")
+    st.subheader("Unit Economics Waterfall")
     metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
     vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
             -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
-    fig_water = go.Figure(go.Waterfall(orientation = "v", measure = ["relative"]*6 + ["total"],
-        x = metrics + ['Net Profit'], y = vals + [0],
-        decreasing = {"marker":{"color":"#EF4444"}}, increasing = {"marker":{"color":"#60B246"}},
-        totals = {"marker":{"color":"#FC8019"}}))
+    fig_water = go.Figure(go.Waterfall(orientation = "v", x = metrics + ['Net Profit'], y = vals + [0],
+        decreasing = {"marker":{"color":"#EF4444"}}, increasing = {"marker":{"color":"#60B246"}}, totals = {"marker":{"color":"#FC8019"}}))
     st.plotly_chart(fig_water, use_container_width=True)
 
 with t5:
-    st.subheader("Scenario Comparison (Net Profit)")
+    st.subheader("Scenario Comparison")
     scenarios = ["Normal Operations", "Heavy Rain", "IPL Match Night"]
-    net_profits = []
-    for scen in scenarios:
-        temp_df = df.copy()
-        if scen == "Heavy Rain": temp_df['delivery_cost'] *= 1.3
-        elif scen == "IPL Match Night": temp_df['order_value'] *= 1.15
-        temp_df['commission'] = temp_df['order_value'] * 0.18
-        temp_df['net_profit'] = (temp_df['commission'] + temp_df['ad_revenue'] + temp_df['delivery_fee']) - (
-            temp_df['delivery_cost'] + temp_df['discount'] + temp_df['opex'])
-        net_profits.append(temp_df['net_profit'].mean())
-    st.bar_chart(pd.DataFrame({"Scenario": scenarios, "Net Profit": net_profits}).set_index('Scenario'))
+    profits = []
+    for s in scenarios:
+        temp = df.copy()
+        if s == "Heavy Rain": temp['delivery_cost'] *= 1.3
+        elif s == "IPL Match Night": temp['order_value'] *= 1.15
+        temp['commission'] = temp['order_value'] * 0.18
+        temp['net_profit'] = (temp['commission'] + temp['ad_revenue'] + temp['delivery_fee']) - (temp['delivery_cost'] + temp['discount'] + temp['opex'])
+        profits.append(temp['net_profit'].mean())
+    st.bar_chart(pd.DataFrame({"Scenario": scenarios, "Net Profit": profits}).set_index('Scenario'))
 
 with t6:
     st.header("Strategic Case Study: Achieving CM2 Positivity")
-    st.caption("By Jagadeesh N | BBA, SRM IST (2023-26)")
+    st.caption("By Jagadeesh N | BBA, SRM IST (2026)")
     c1, c2 = st.columns(2)
     with c1:
         st.subheader("📍 Problem Statement")
-        [cite_start]st.write("Quick-commerce businesses face thin margins due to last-mile costs and discount-heavy growth[cite: 37]. [cite_start]Achieving CM2 positivity is the primary challenge[cite: 38].")
+        st.write("Quick-commerce businesses like Swiggy Instamart operate on thin margins due to high last-mile costs and discount-heavy growth.")
+        st.write("Achieving CM2 positivity is the industry's primary challenge.")
         st.subheader("💡 Key Strategic Insights")
-        [cite_start]st.success("**AOV Lever:** A ₹50-₹70 increase in AOV has higher impact than 20% volume growth[cite: 45].")
-        [cite_start]st.info("**Batching Efficiency:** Reducing costs by ₹10 via batching is 2x more sustainable than increasing fees[cite: 46].")
+        st.success("**AOV Lever:** A ₹50-₹70 increase in AOV has higher impact than 20% volume growth.")
+        st.info("**Batching:** Reducing costs by ₹10 via batching is 2x more sustainable than increasing fees.")
     with c2:
         st.subheader("🚀 Recommendations")
-        st.markdown("""
-        * [cite_start]**Incentivize High-AOV:** Tiered delivery for orders above ₹500[cite: 50].
-        * [cite_start]**Optimize Density:** Prioritize batching during IPL nights[cite: 51].
-        * [cite_start]**Dynamic Discounting:** Move to Margin-Aware triggers[cite: 52].
-        """)
+        st.markdown("* **High-AOV Baskets:** Tiered delivery for orders >₹500.\n* **Density:** Prioritize multi-order batching during peak demand.\n* **Discounting:** Shift to 'Margin-Aware' triggers.")
         st.subheader("🛠️ Technical Execution")
-        [cite_start]st.write("Built with Python, Pandas, and Plotly to bridge technical analysis and executive strategy[cite: 54, 57].")
+        st.write("Developed with Python and Pandas to bridge technical analysis and executive strategy.")
 
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Business Analytics Portfolio")
