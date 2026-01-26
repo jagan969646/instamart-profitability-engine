@@ -34,42 +34,14 @@ st.markdown("""
 
 # --- DATA LOADING ---
 @st.cache_data
-def load_and_enrich():
+def load_data():
     if not os.path.exists(DATA_PATH):
-        st.error(f"🚨 Missing {DATA_PATH}")
+        st.error("🚨 Data file not found.")
         st.stop()
-    
     df = pd.read_csv(DATA_PATH)
-    
-    # List of required columns for the simulation logic
-    required_cols = {
-        'delivery_fee': 15, 
-        'delivery_cost': 40, 
-        'discount': 20,
-        'order_value': 450, 
-        'category': 'FMCG', 
-        'freshness_hrs_left': 24,
-        'zone': 'Cluster A'
-    }
-
-    # If the column is missing from your CSV, this adds it with a default value
-    for col, default_val in required_cols.items():
-        if col not in df.columns:
-            df[col] = default_val
-
-    # Ensure order_time is in datetime format
-    if 'order_time' in df.columns:
-        df['order_time'] = pd.to_datetime(df['order_time'])
-    else:
-        # Create a dummy date column if it doesn't exist
-        df['order_time'] = pd.Timestamp.now()
-
-    # Pre-calculate baseline metrics for the simulation
-    df['commission'] = df['order_value'] * 0.18
-    df['ad_revenue'] = df['order_value'] * 0.05
-    df['opex'] = 12
-    
+    df['order_time'] = pd.to_datetime(df['order_time'])
     return df
+
 df = load_data()
 
 # --- SIDEBAR ---
@@ -159,4 +131,3 @@ with t3:
 
 st.markdown("---")
 st.caption("Business Analyst Portfolio | Jagadeesh N [cite: 28]")
-
