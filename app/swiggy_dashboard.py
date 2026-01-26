@@ -133,10 +133,17 @@ with st.sidebar:
     st.info("Simulating impact on Contribution Margin (CM).")
 
     # --- CONTEXTUAL SCENARIOS ---
-    st.subheader("⛈️ Contextual Scenarios")
-    scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
+st.subheader("⛈️ Contextual Scenarios")
+scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
 
-    aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
+# Additional levers
+aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
+marketing_spend = st.slider("Marketing Spend (₹)", 0, 50000, 0)
+
+# Reset button for all sliders
+if st.button("🔄 Reset Levers"):
+    st.experimental_rerun()
+
 
 
 # --- SIMULATION ENGINE ---
@@ -146,24 +153,23 @@ f_df = df[df['zone'].isin(zones)].copy()
 f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
 
-# --- CONTEXTUAL SCENARIOS EFFECTS ---
+# Scenario adjustments
 if scenario == "Heavy Rain":
-    f_df['delivery_cost'] *= 1.3  # Surge in rider payouts
+    f_df['delivery_cost'] *= 1.3
     st.sidebar.warning("Note: Rain surge active (Costs +30%)")
 elif scenario == "IPL Match Night":
-    f_df['order_value'] *= 1.15  # Surge in snack/beverage demand
+    f_df['order_value'] *= 1.15
     st.sidebar.success("Note: IPL demand spike active (+15% GOV)")
 
-# AOV boost
-f_df['order_value'] += aov_boost
+# AOV and Marketing Boost
+f_df['order_value'] += aov_boost + marketing_spend / 1000
 
-# Recalculate commission as it's a % of order_value
+# Recalculate commission & net profit
 f_df['commission'] = f_df['order_value'] * 0.18
-
-# Recalculate net profit
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (
     f_df['delivery_cost'] + f_df['discount'] + f_df['opex']
 )
+
 
 
 # --- HEADER ---
@@ -302,5 +308,6 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
 
