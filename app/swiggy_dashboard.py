@@ -11,7 +11,6 @@ st.set_page_config(page_title="INSTAMART | Singularity v8.0", page_icon="🧡", 
 
 # --- PATH & ASSET RECOVERY ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Check for data in 'app/' folder based on your GitHub structure
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 
@@ -41,7 +40,6 @@ def load_and_engineer():
     if os.path.exists(DATA_PATH):
         df = pd.read_csv(DATA_PATH)
     else:
-        # Emergency Fallback Data
         zones = ['Koramangala', 'Indiranagar', 'HSR Layout', 'Whitefield', 'Jayanagar']
         categories = ['Perishables', 'FMCG', 'Munchies', 'Beverages', 'Personal Care']
         data = {
@@ -92,10 +90,15 @@ f_df['delivery_fee'] += surge_adj
 f_df['discount'] *= (1 - disc_cut/100)
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + 15.0)
 
-# --- SAFETY: SANITIZE SIZE COLUMN ---
-# Plotly scatter 'size' must be > 0. We'll clip at 1 to prevent ValueErrors.
-f_df['abs_order_value'] = f_df['order_value'].clip(lower=1)
-f_df['abs_delivery_cost'] = f_df['delivery_cost'].clip(lower=1)
+# --- CRITICAL SAFETY LAYER: PREVENT VALUEERRORS ---
+# Convert all numeric columns to float and replace NaNs/Infs with 0
+cols_to_fix = ['order_value', 'net_profit', 'delivery_cost', 'delivery_time_mins', 'customer_rating']
+for col in cols_to_fix:
+    f_df[col] = np.nan_to_num(f_df[col].astype(float))
+
+# Plotly 'size' parameter REQUIRES values > 0. We'll use a safe sizing column.
+f_df['viz_size'] = f_df['order_value'].apply(lambda x: max(x, 1))
+f_df['viz_cost'] = f_df['delivery_cost'].apply(lambda x: max(x, 1))
 
 # --- MAIN INTERFACE ---
 st.markdown("<h1 style='color: #FC8019;'>INSTAMART <span style='color:#FFF; font-weight:100;'>SINGULARITY v8.0</span></h1>", unsafe_allow_html=True)
@@ -120,8 +123,7 @@ with t1:
     col1, col2, col3 = st.columns(3)
     with col1:
         st.write("### 1. Revenue Elasticity Mix")
-        fig1 = px.pie(values=[f_df['commission'].sum(), f_df['ad_rev'].sum(), f_df['delivery_fee'].sum()], 
-                     names=['Commission', 'Ad Revenue', 'Delivery Fees'], hole=0.6, color_discrete_sequence=['#FC8019', '#3D4152', '#60B246'])
+        fig1 = px.pie(f_df, values='order_value', names='category', hole=0.6, color_discrete_sequence=px.colors.sequential.Oranges_r)
         fig1.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig1, use_container_width=True)
     with col2:
@@ -166,8 +168,7 @@ with t3:
         st.plotly_chart(fig7, use_container_width=True)
     with col8:
         st.write("### 8. High-Risk Inventory Scatter")
-        # Sanitize Size Column for Chart 8
-        fig8 = px.scatter(f_df, x="freshness_hrs_left", y="order_value", size="abs_delivery_cost", color="zone", hover_name="category")
+        fig8 = px.scatter(f_df, x="freshness_hrs_left", y="order_value", size="viz_cost", color="zone", hover_name="category")
         fig8.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig8, use_container_width=True)
     with col9:
@@ -186,8 +187,8 @@ with t4:
         st.plotly_chart(fig10, use_container_width=True)
     with col11:
         st.write("### 11. Customer Satisfaction vs. Profit")
-        # Sanitize Size Column for Chart 11
-        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="abs_order_value")
+        # CRITICAL FIX: Using sanitized viz_size column
+        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="viz_size")
         fig11.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig11, use_container_width=True)
     with col12:
@@ -196,10 +197,5 @@ with t4:
         fig12.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig12, use_container_width=True)
 
-    st.divider()
-    if st.button("🚀 EXECUTE GLOBAL FLASH SALVAGE"):
-        st.balloons()
-        st.success("SIMULATION COMPLETE: EBITDA Leak plugged. Push notifications dispatched to local zones.")
-
 st.markdown("---")
-st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | 2026 | STATUS: DEPLOYED")
+st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | 2026")
