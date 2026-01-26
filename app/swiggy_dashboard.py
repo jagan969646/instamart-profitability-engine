@@ -86,7 +86,10 @@ with st.sidebar:
     if os.path.exists(logo_file): st.image(logo_file, use_container_width=True)
     
     st.markdown("### 🎛️ CONTROL TOWER")
+    theme_choice = st.selectbox("VISUAL ENGINE", ["Swiggy Neural (Dark)", "Swiggy Standard (Light)"])
+    plot_template = apply_swiggy_theme(theme_choice)
     
+    st.markdown("---")
     module = st.radio("INTELLIGENCE MODULE", 
                     ["GROWTH_VECTORS", "LOGISTICS_SLA", "ECONOMICS_UNIT", "RISK_VECTORS", "STRATEGIC_CASE_STUDY"])
     
@@ -180,4 +183,5 @@ elif module == "ECONOMICS_UNIT":
 
 # --- 7. GLOBAL FOOTER ---
 st.markdown(f'<div class="footer-sig">DESIGNED BY Jagadeesh.N | SWIGGY NEURAL OPS V4.0</div>', unsafe_allow_html=True)
+
 
