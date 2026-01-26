@@ -40,6 +40,7 @@ def load_and_engineer():
     if os.path.exists(DATA_PATH):
         df = pd.read_csv(DATA_PATH)
     else:
+        # Fallback Generator
         zones = ['Koramangala', 'Indiranagar', 'HSR Layout', 'Whitefield', 'Jayanagar']
         categories = ['Perishables', 'FMCG', 'Munchies', 'Beverages', 'Personal Care']
         data = {
@@ -55,12 +56,26 @@ def load_and_engineer():
         }
         df = pd.DataFrame(data)
 
+    # Hardening Column Names
     df.columns = df.columns.str.strip().str.lower()
+    
+    # Critical Fix: Ensure 'delivery_fee' exists to prevent KeyError
+    if 'delivery_fee' not in df.columns:
+        df['delivery_fee'] = 25.0
+    
+    # Ensure numeric types for calculation columns
+    numeric_cols = ['order_value', 'delivery_cost', 'discount', 'delivery_fee']
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['hour'] = df['order_time'].dt.hour
+    
+    # Baseline Unit Economics
     df['commission'] = df['order_value'] * 0.18
     df['ad_rev'] = df['order_value'] * 0.05
-    if 'delivery_fee' not in df.columns: df['delivery_fee'] = 25.0
+    
     return df
 
 df = load_and_engineer()
@@ -82,64 +97,79 @@ sit_map = {"Standard Ops": 1.0, "IPL Final Night": 2.2, "Heavy Rain Surge": 1.7,
 weather_map = {"Clear": 1.0, "Cloudy": 1.2, "Heavy Rain": 1.8, "Extreme Storm": 2.5}
 cost_mult = sit_map[situation] * weather_map[weather]
 
+# Simulation Math
 f_df['delivery_cost'] *= cost_mult
 f_df['order_value'] *= sit_map[situation]
 f_df['order_value'] += aov_adj
 f_df['delivery_fee'] += surge_adj
 f_df['discount'] *= (1 - disc_cut/100)
-f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + 15.0)
 
-# --- CRITICAL DATA SCRUBBING ---
-# Ensure columns exist and fill NaNs to prevent px.histogram/scatter crashes
-cols_to_scrub = ['order_value', 'net_profit', 'customer_rating', 'delivery_time_mins']
-for col in cols_to_scrub:
-    if col in f_df.columns:
-        f_df[col] = pd.to_numeric(f_df[col], errors='coerce').fillna(0)
+# Net Profit calculation (including fixed store OPEX of 15.0)
+f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - \
+                     (f_df['delivery_cost'] + f_df['discount'] + 15.0)
 
-# Sizing must be positive
+# Cleaning for Viz
 f_df['viz_size'] = f_df['order_value'].clip(lower=1)
 
 # --- MAIN INTERFACE ---
 st.markdown("<h1 style='color: #FC8019;'>INSTAMART <span style='color:#FFF; font-weight:100;'>SINGULARITY v8.0</span></h1>", unsafe_allow_html=True)
 
+# KPI Row
 c1, c2, c3, c4 = st.columns(4)
+gov = f_df['order_value'].sum()
+cm2 = f_df['net_profit'].mean()
+margin = (f_df['net_profit'].sum() / gov * 100) if gov != 0 else 0
+success_rate = (f_df['net_profit'] > 0).mean() * 100
+
 metrics = [
-    ("Projected GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M"),
-    ("CM2 / Order", f"₹{f_df['net_profit'].mean():.2f}"),
-    ("Net Margin", f"{(f_df['net_profit'].sum()/f_df['order_value'].sum())*100:.1f}%"),
-    ("Profitable Orders", f"{(f_df['net_profit']>0).mean()*100:.1f}%")
+    ("Projected GOV", f"₹{gov/1e6:.2f}M"),
+    ("CM2 / Order", f"₹{cm2:.2f}"),
+    ("Net Margin", f"{margin:.1f}%"),
+    ("Profitable Orders", f"{success_rate:.1f}%")
 ]
+
 for col, (l, v) in zip([c1, c2, c3, c4], metrics):
     col.markdown(f'<div class="metric-card"><div class="metric-label">{l}</div><div class="metric-value">{v}</div></div>', unsafe_allow_html=True)
 
 st.write("")
 st.markdown(f"""<div class="terminal">> [LOG]: {situation.upper()} ACTIVE | WEATHER: {weather.upper()} ({weather_map[weather]}x Friction)<br>> [STATUS]: Engine online. Parameters synced.</div>""", unsafe_allow_html=True)
 
-t1, t2, t3, t4 = st.tabs(["💰 Financial Architecture", "📍 Zonal Analytics", "🥬 Inventory & Risk", "👥 Customer Experience"])
+t1, t2, t3, t4 = st.tabs(["💰 Financials", "📍 Zonal Analytics", "🥬 Inventory", "👥 Customer Experience"])
 
-# --- TAB 1, 2, 3 RENDERED AS USUAL (keeping logic dry) ---
-# ... (Waterfall, Sunburst, etc.)
+with t1:
+    st.subheader("Unit Economics (Waterfall)")
+    # Averaging metrics for the Waterfall
+    wf_metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
+    wf_values = [
+        f_df['commission'].mean(), f_df['ad_rev'].mean(), f_df['delivery_fee'].mean(),
+        -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -15.0
+    ]
+    fig_wf = go.Figure(go.Waterfall(
+        orientation = "v", x = wf_metrics + ['Net Profit'], y = wf_values + [0],
+        totals = {"marker":{"color":"#FC8019"}},
+        decreasing = {"marker":{"color":"#EF4444"}},
+        increasing = {"marker":{"color":"#60B246"}}
+    ))
+    fig_wf.update_layout(template="plotly_dark", height=450)
+    st.plotly_chart(fig_wf, use_container_width=True)
 
 with t4:
     col10, col11, col12 = st.columns(3)
     with col10:
-        st.write("### 10. Delivery Time Efficiency")
+        st.write("### Delivery Efficiency")
         fig10 = px.violin(f_df, y="delivery_time_mins", x="zone", box=True, color="zone", template="plotly_dark")
         st.plotly_chart(fig10, use_container_width=True)
     with col11:
-        st.write("### 11. Customer Satisfaction vs. Profit")
-        # Try/Except to catch specific render issues without crashing whole app
-        try:
-            fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="viz_size", template="plotly_dark")
-            st.plotly_chart(fig11, use_container_width=True)
-        except: st.warning("Data mismatch in Scatter 11")
+        st.write("### Satisfaction vs. Profit")
+        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", 
+                          color="net_profit", size="viz_size", 
+                          color_continuous_scale="RdYlGn", template="plotly_dark")
+        st.plotly_chart(fig11, use_container_width=True)
     with col12:
-        st.write("### 12. Rating Distribution")
-        try:
-            # We use f_df[f_df['customer_rating'] > 0] to ensure the histogram doesn't choke on zeros
-            fig12 = px.histogram(f_df[f_df['customer_rating'] > 0], x="customer_rating", nbins=10, color_discrete_sequence=['#FC8019'], template="plotly_dark")
-            st.plotly_chart(fig12, use_container_width=True)
-        except: st.warning("Data mismatch in Histogram 12")
+        st.write("### Rating Distribution")
+        fig12 = px.histogram(f_df[f_df['customer_rating'] > 0], x="customer_rating", 
+                            nbins=10, color_discrete_sequence=['#FC8019'], template="plotly_dark")
+    st.plotly_chart(fig12, use_container_width=True)
 
 st.markdown("---")
 st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | 2026")
