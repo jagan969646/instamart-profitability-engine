@@ -132,6 +132,13 @@ with st.sidebar:
     disc_opt = st.slider("Discount Optimization (%)", 0, 100, 20)
     st.info("Simulating impact on Contribution Margin (CM).")
 
+    # --- CONTEXTUAL SCENARIOS ---
+    st.subheader("⛈️ Contextual Scenarios")
+    scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
+
+    aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
+
+
 # --- SIMULATION ENGINE ---
 f_df = df[df['zone'].isin(zones)].copy()
 f_df['delivery_fee'] += fee_adj
@@ -276,3 +283,4 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
