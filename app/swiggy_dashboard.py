@@ -17,7 +17,7 @@ st.set_page_config(
 # --- 2. DYNAMIC THEME ENGINE (HIGH CONTRAST) ---
 def apply_swiggy_theme(theme_choice):
     if theme_choice == "Swiggy Neural (Dark)":
-        bg, text, card, accent, standared_bg = "#050505", "#8F9BB3", "#111115", "#FC8019", "#0A0A0C"
+        bg, text, card, accent, sidebar_bg = "#050505", "#8F9BB3", "#111115", "#FC8019", "#0A0A0C"
     else:
         # High Contrast Light Mode for readability
         bg, text, card, accent, sidebar_bg = "#FFFFFF", "#1A1C2E", "#F8F9FA", "#FC8019", "#F0F2F6"
@@ -189,3 +189,4 @@ elif module == "RISK_VECTORS":
 
 # --- 7. FOOTER ---
 st.markdown(f'<div class="footer-sig">DESIGNED BY JAGADEESH N | NEURAL OPS V4.0</div>', unsafe_allow_html=True)
+
