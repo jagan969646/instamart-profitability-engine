@@ -75,7 +75,6 @@ with st.sidebar:
     aov_adj = st.slider("AOV Expansion (₹)", 0, 200, 30)
     surge_adj = st.slider("Dynamic Surge Alpha (₹)", 0, 100, 20)
     disc_cut = st.slider("Subsidy Optimization (%)", 0, 100, 15)
-    st.info("System optimized for profitability v8.0")
 
 # --- PREDICTIVE PHYSICS ---
 f_df = df.copy()
@@ -90,15 +89,15 @@ f_df['delivery_fee'] += surge_adj
 f_df['discount'] *= (1 - disc_cut/100)
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + 15.0)
 
-# --- CRITICAL SAFETY LAYER: PREVENT VALUEERRORS ---
-# Convert all numeric columns to float and replace NaNs/Infs with 0
+# --- REFINED SAFETY LAYER: KEYERROR PROTECTION ---
 cols_to_fix = ['order_value', 'net_profit', 'delivery_cost', 'delivery_time_mins', 'customer_rating']
 for col in cols_to_fix:
-    f_df[col] = np.nan_to_num(f_df[col].astype(float))
+    if col in f_df.columns:
+        f_df[col] = np.nan_to_num(f_df[col].astype(float))
 
-# Plotly 'size' parameter REQUIRES values > 0. We'll use a safe sizing column.
-f_df['viz_size'] = f_df['order_value'].apply(lambda x: max(x, 1))
-f_df['viz_cost'] = f_df['delivery_cost'].apply(lambda x: max(x, 1))
+# Secure sizing columns with fallbacks
+f_df['viz_size'] = f_df['order_value'].apply(lambda x: max(x, 1)) if 'order_value' in f_df.columns else 10
+f_df['viz_cost'] = f_df['delivery_cost'].apply(lambda x: max(x, 1)) if 'delivery_cost' in f_df.columns else 10
 
 # --- MAIN INTERFACE ---
 st.markdown("<h1 style='color: #FC8019;'>INSTAMART <span style='color:#FFF; font-weight:100;'>SINGULARITY v8.0</span></h1>", unsafe_allow_html=True)
@@ -116,7 +115,6 @@ for col, (l, v) in zip([c1, c2, c3, c4], metrics):
 st.write("")
 st.markdown(f"""<div class="terminal">> [LOG]: {situation.upper()} ACTIVE | WEATHER: {weather.upper()} ({weather_map[weather]}x Friction)<br>> [STATUS]: Engine online. Parameters synced.</div>""", unsafe_allow_html=True)
 
-# --- THE 12 CHART MATRIX ---
 t1, t2, t3, t4 = st.tabs(["💰 Financial Architecture", "📍 Zonal Analytics", "🥬 Inventory & Risk", "👥 Customer Experience"])
 
 with t1:
@@ -187,10 +185,12 @@ with t4:
         st.plotly_chart(fig10, use_container_width=True)
     with col11:
         st.write("### 11. Customer Satisfaction vs. Profit")
-        # CRITICAL FIX: Using sanitized viz_size column
-        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="viz_size")
-        fig11.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig11, use_container_width=True)
+        try:
+            fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="viz_size")
+            fig11.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig11, use_container_width=True)
+        except Exception:
+            st.error("Chart 11 could not render due to data mismatch.")
     with col12:
         st.write("### 12. Rating Distribution")
         fig12 = px.histogram(f_df, x="customer_rating", nbins=10, color_discrete_sequence=['#FC8019'])
