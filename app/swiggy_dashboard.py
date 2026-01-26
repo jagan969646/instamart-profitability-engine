@@ -182,4 +182,5 @@ elif module == "ECONOMICS_UNIT":
     with c3: draw_intel_chart(px.scatter(f_df, x="delivery_cost", y="contribution_margin", color="market_context"), "Logistics-Margin Matrix")
 
 # --- 7. GLOBAL FOOTER ---
-st.markdown(f'<div class="footer-sig">DESIGNED BY [YOUR NAME] | SWIGGY NEURAL OPS V4.0</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="footer-sig">DESIGNED BY Jagadeesh.N | SWIGGY NEURAL OPS V4.0</div>', unsafe_allow_html=True)
+
