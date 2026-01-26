@@ -141,11 +141,30 @@ with st.sidebar:
 
 # --- SIMULATION ENGINE ---
 f_df = df[df['zone'].isin(zones)].copy()
+
+# Delivery fee & discount adjustments
 f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
+
+# --- CONTEXTUAL SCENARIOS EFFECTS ---
+if scenario == "Heavy Rain":
+    f_df['delivery_cost'] *= 1.3  # Surge in rider payouts
+    st.sidebar.warning("Note: Rain surge active (Costs +30%)")
+elif scenario == "IPL Match Night":
+    f_df['order_value'] *= 1.15  # Surge in snack/beverage demand
+    st.sidebar.success("Note: IPL demand spike active (+15% GOV)")
+
+# AOV boost
+f_df['order_value'] += aov_boost
+
+# Recalculate commission as it's a % of order_value
+f_df['commission'] = f_df['order_value'] * 0.18
+
+# Recalculate net profit
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (
     f_df['delivery_cost'] + f_df['discount'] + f_df['opex']
 )
+
 
 # --- HEADER ---
 head_col1, head_col2 = st.columns([1, 6])
@@ -283,4 +302,5 @@ with t4:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
