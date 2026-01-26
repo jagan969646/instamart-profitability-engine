@@ -6,30 +6,30 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
-# --- CORE SYSTEM CONFIG ---
-st.set_page_config(page_title="INSTAMART | Singularity v8.0", page_icon="🧡", layout="wide")
+# --- SYSTEM CONFIG ---
+st.set_page_config(page_title="INSTAMART | Singularity v9.0", page_icon="🧡", layout="wide")
 
-# --- PATH & ASSET RECOVERY ---
+# --- ASSET PATHS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
-SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
+LOGO_URL = "https://raw.githubusercontent.com/jagan969646/instamart-profitability-engine/main/app/Logo.png"
 
-# --- ELITE WAR-ROOM CSS ---
+# --- ELITE UI STYLING ---
 st.markdown("""
 <style>
     .stApp { background-color: #050505; color: #FFFFFF; }
     .metric-card {
         background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(252, 128, 25, 0.4);
-        padding: 20px; border-radius: 15px;
-        text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        border: 1px solid rgba(252, 128, 25, 0.5);
+        padding: 25px; border-radius: 20px;
+        text-align: center; transition: 0.3s;
     }
-    .metric-value { font-size: 2.2rem; font-weight: 900; color: #FC8019; }
-    .metric-label { font-size: 0.75rem; letter-spacing: 2px; color: #888; text-transform: uppercase; }
-    .terminal {
-        background: #000; border-left: 5px solid #2ECC71;
-        padding: 15px; font-family: 'Courier New', monospace; color: #2ECC71;
-        font-size: 0.85rem; margin-bottom: 20px; border-radius: 0 10px 10px 0;
+    .metric-card:hover { border-color: #FC8019; background: rgba(252, 128, 25, 0.05); }
+    .metric-value { font-size: 2.5rem; font-weight: 900; color: #FC8019; }
+    .metric-label { font-size: 0.8rem; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 10px; }
+    .case-study-box {
+        background: #111; border-left: 5px solid #FC8019;
+        padding: 20px; border-radius: 0 15px 15px 0; margin: 10px 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -40,156 +40,112 @@ def load_and_engineer():
     if os.path.exists(DATA_PATH):
         df = pd.read_csv(DATA_PATH)
     else:
-        # Fallback Generator
-        zones = ['Koramangala', 'Indiranagar', 'HSR Layout', 'Whitefield', 'Jayanagar']
-        categories = ['Perishables', 'FMCG', 'Munchies', 'Beverages', 'Personal Care']
-        data = {
-            'order_time': [datetime.now() - timedelta(minutes=x*10) for x in range(1000)],
-            'order_value': np.random.uniform(200, 1500, 1000),
-            'delivery_cost': np.random.uniform(40, 110, 1000),
-            'discount': np.random.uniform(0, 120, 1000),
-            'zone': np.random.choice(zones, 1000),
-            'category': np.random.choice(categories, 1000),
-            'freshness_hrs_left': np.random.randint(1, 48, 1000),
-            'delivery_time_mins': np.random.randint(12, 45, 1000),
+        # Emergency Simulation if CSV fails
+        df = pd.DataFrame({
+            'order_time': [datetime.now() - timedelta(minutes=x*5) for x in range(1000)],
+            'order_value': np.random.uniform(300, 1200, 1000),
+            'delivery_cost': np.random.uniform(50, 90, 1000),
+            'discount': np.random.uniform(0, 50, 1000),
+            'zone': np.random.choice(['Indiranagar', 'Koramangala', 'HSR', 'Whitefield'], 1000),
+            'delivery_time_mins': np.random.randint(15, 40, 1000),
             'customer_rating': np.random.uniform(3.5, 5.0, 1000)
-        }
-        df = pd.DataFrame(data)
+        })
 
-    # Hardening Column Names
     df.columns = df.columns.str.strip().str.lower()
-    
-    # Critical Fix: Ensure 'delivery_fee' exists to prevent KeyError
-    if 'delivery_fee' not in df.columns:
-        df['delivery_fee'] = 25.0
-    
-    # Ensure numeric types for calculation columns
-    numeric_cols = ['order_value', 'delivery_cost', 'discount', 'delivery_fee']
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-
     df['order_time'] = pd.to_datetime(df['order_time'])
-    df['hour'] = df['order_time'].dt.hour
     
-    # Baseline Unit Economics
+    # Unit Economics Logic [cite: 10, 42]
+    if 'delivery_fee' not in df.columns: df['delivery_fee'] = 29.0
     df['commission'] = df['order_value'] * 0.18
     df['ad_rev'] = df['order_value'] * 0.05
-    
     return df
 
 df = load_and_engineer()
 
-# --- SIDEBAR: STRATEGIC CONTROL TOWER ---
+# --- SIDEBAR: OPERATIONS CONTROL ---
 with st.sidebar:
-    st.image(SWIGGY_URL, width=120)
-    st.header("🛰️ Operations")
-    situation = st.selectbox("Market Situation", ["Standard Ops", "IPL Final Night", "Heavy Rain Surge", "Weekend Peak"])
-    weather = st.select_slider("Weather Friction", options=["Clear", "Cloudy", "Heavy Rain", "Extreme Storm"])
+    st.image(LOGO_URL, width=150)
+    st.markdown("### 🛰️ LIVE SIMULATOR")
+    situation = st.selectbox("Market Scenario", ["Standard Day", "IPL Match Night", "Monsoon Surge"])
+    
     st.divider()
-    aov_adj = st.slider("AOV Expansion (₹)", 0, 200, 30)
-    surge_adj = st.slider("Dynamic Surge Alpha (₹)", 0, 100, 20)
-    disc_cut = st.slider("Subsidy Optimization (%)", 0, 100, 15)
+    st.markdown("### 🛠️ STRATEGIC LEVERS")
+    # AOV is the strongest lever 
+    aov_expansion = st.slider("AOV Expansion (Strategy 1)", 0, 150, 50)
+    # Reducing cost via batching is 2x more sustainable [cite: 14, 46]
+    batching_eff = st.slider("Batching Efficiency (Strategy 2)", 0, 30, 10)
+    # Dynamic discounting [cite: 20, 52]
+    disc_reduction = st.slider("Discount Optimization (Strategy 3)", 0, 100, 20)
 
-# --- PREDICTIVE PHYSICS ---
-# --- PREDICTIVE PHYSICS ---
+# --- PREDICTIVE MATH ---
 f_df = df.copy()
-sit_map = {"Standard Ops": 1.0, "IPL Final Night": 2.2, "Heavy Rain Surge": 1.7, "Weekend Peak": 1.4}
-weather_map = {"Clear": 1.0, "Cloudy": 1.2, "Heavy Rain": 1.8, "Extreme Storm": 2.5}
-cost_mult = sit_map[situation] * weather_map[weather]
+sit_mult = {"Standard Day": 1.0, "IPL Match Night": 1.8, "Monsoon Surge": 1.5}
 
-# Simulation Math
-f_df['delivery_cost'] *= cost_mult
-f_df['order_value'] *= sit_map[situation]
-f_df['order_value'] += aov_adj
-f_df['delivery_fee'] += surge_adj
-f_df['discount'] *= (1 - disc_cut/100)
+f_df['order_value'] = (f_df['order_value'] * sit_mult[situation]) + aov_expansion
+f_df['delivery_cost'] = (f_df['delivery_cost'] * sit_mult[situation]) - batching_eff
+f_df['discount'] *= (1 - disc_reduction/100)
+f_df['commission'] = f_df['order_value'] * 0.18
 
-# Net Profit calculation
-f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - \
-                     (f_df['delivery_cost'] + f_df['discount'] + 15.0)
+# CM2 calculation [cite: 6, 38]
+f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + 15.0)
 
-# --- CRITICAL FIX FOR VALUEERROR ---
-# 1. Ensure order_value is never 0 or negative for the 'size' parameter
-f_df['viz_size'] = f_df['order_value'].apply(lambda x: x if x > 0 else 1)
-
-# 2. Drop any remaining NaNs in visualization columns to prevent Plotly errors
-f_df = f_df.dropna(subset=['delivery_time_mins', 'customer_rating', 'net_profit', 'viz_size'])
-
-# Simulation Math
-f_df['delivery_cost'] *= cost_mult
-f_df['order_value'] *= sit_map[situation]
-f_df['order_value'] += aov_adj
-f_df['delivery_fee'] += surge_adj
-f_df['discount'] *= (1 - disc_cut/100)
-
-# Net Profit calculation (including fixed store OPEX of 15.0)
-f_df['net_profit'] = (f_df['commission'] + f_df['ad_rev'] + f_df['delivery_fee']) - \
-                     (f_df['delivery_cost'] + f_df['discount'] + 15.0)
-
-# Cleaning for Viz
+# Sanitize for viz
 f_df['viz_size'] = f_df['order_value'].clip(lower=1)
 
-# --- MAIN INTERFACE ---
-st.markdown("<h1 style='color: #FC8019;'>INSTAMART <span style='color:#FFF; font-weight:100;'>SINGULARITY v8.0</span></h1>", unsafe_allow_html=True)
+# --- INTERFACE ---
+st.markdown("<h1 style='color: #FC8019;'>INSTAMART <span style='color:#FFF; font-weight:100;'>SINGULARITY v9.0</span></h1>", unsafe_allow_html=True)
+st.caption("Advanced Profitability Engine | CM2 Strategy Framework 2026")
 
-# KPI Row
 c1, c2, c3, c4 = st.columns(4)
-gov = f_df['order_value'].sum()
-cm2 = f_df['net_profit'].mean()
-margin = (f_df['net_profit'].sum() / gov * 100) if gov != 0 else 0
-success_rate = (f_df['net_profit'] > 0).mean() * 100
-
 metrics = [
-    ("Projected GOV", f"₹{gov/1e6:.2f}M"),
-    ("CM2 / Order", f"₹{cm2:.2f}"),
-    ("Net Margin", f"{margin:.1f}%"),
-    ("Profitable Orders", f"{success_rate:.1f}%")
+    ("Projected GOV", f"₹{f_df['order_value'].sum()/1e6:.2f}M"),
+    ("CM2 per Order", f"₹{f_df['net_profit'].mean():.2f}"),
+    ("Margin %", f"{(f_df['net_profit'].sum()/f_df['order_value'].sum()*100):.1f}%"),
+    ("Health Score", "ELITE" if f_df['net_profit'].mean() > 40 else "CRITICAL")
 ]
 
 for col, (l, v) in zip([c1, c2, c3, c4], metrics):
     col.markdown(f'<div class="metric-card"><div class="metric-label">{l}</div><div class="metric-value">{v}</div></div>', unsafe_allow_html=True)
 
-st.write("")
-st.markdown(f"""<div class="terminal">> [LOG]: {situation.upper()} ACTIVE | WEATHER: {weather.upper()} ({weather_map[weather]}x Friction)<br>> [STATUS]: Engine online. Parameters synced.</div>""", unsafe_allow_html=True)
-
-t1, t2, t3, t4 = st.tabs(["💰 Financials", "📍 Zonal Analytics", "🥬 Inventory", "👥 Customer Experience"])
+# --- TABBED INTELLIGENCE ---
+t1, t2, t3 = st.tabs(["📊 Financial DNA", "🎯 Strategic Recommendations", "📖 Full Case Study"])
 
 with t1:
-    st.subheader("Unit Economics (Waterfall)")
-    # Averaging metrics for the Waterfall
-    wf_metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
-    wf_values = [
-        f_df['commission'].mean(), f_df['ad_rev'].mean(), f_df['delivery_fee'].mean(),
-        -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -15.0
-    ]
-    fig_wf = go.Figure(go.Waterfall(
-        orientation = "v", x = wf_metrics + ['Net Profit'], y = wf_values + [0],
-        totals = {"marker":{"color":"#FC8019"}},
-        decreasing = {"marker":{"color":"#EF4444"}},
-        increasing = {"marker":{"color":"#60B246"}}
-    ))
-    fig_wf.update_layout(template="plotly_dark", height=450)
-    st.plotly_chart(fig_wf, use_container_width=True)
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        st.write("### Unit Economics Waterfall")
+        wf_vals = [f_df['commission'].mean(), f_df['ad_rev'].mean(), f_df['delivery_fee'].mean(), -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -15.0]
+        fig_wf = go.Figure(go.Waterfall(
+            x = ['Commission', 'Ads', 'Fees', 'Delivery', 'Discounts', 'Fixed Store'],
+            y = wf_vals, totals = {"marker":{"color":"#FC8019"}}
+        ))
+        fig_wf.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_wf, use_container_width=True)
+    with col_b:
+        st.write("### Satisfaction vs. Margin")
+        fig_scat = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", color="net_profit", size="viz_size", color_continuous_scale="RdYlGn", template="plotly_dark")
+        st.plotly_chart(fig_scat, use_container_width=True)
 
-with t4:
-    col10, col11, col12 = st.columns(3)
-    with col10:
-        st.write("### Delivery Efficiency")
-        fig10 = px.violin(f_df, y="delivery_time_mins", x="zone", box=True, color="zone", template="plotly_dark")
-        st.plotly_chart(fig10, use_container_width=True)
-    with col11:
-        st.write("### Satisfaction vs. Profit")
-        fig11 = px.scatter(f_df, x="delivery_time_mins", y="customer_rating", 
-                          color="net_profit", size="viz_size", 
-                          color_continuous_scale="RdYlGn", template="plotly_dark")
-        st.plotly_chart(fig11, use_container_width=True)
-    with col12:
-        st.write("### Rating Distribution")
-        fig12 = px.histogram(f_df[f_df['customer_rating'] > 0], x="customer_rating", 
-                            nbins=10, color_discrete_sequence=['#FC8019'], template="plotly_dark")
-    st.plotly_chart(fig12, use_container_width=True)
+with t2:
+    st.markdown("### 🚀 Execution Roadmap based on Analysis")
+    st.info("**Strategy 1: Incentivize High-AOV Baskets**\nUsing tiered delivery for orders >₹500 and AI-driven bundling[cite: 18, 50].")
+    st.success("**Strategy 2: Optimize Delivery Densities**\nPrioritizing demand clustering and batching during peaks like IPL nights to dilute costs[cite: 19, 51].")
+    st.warning("**Strategy 3: Dynamic Discounting**\nShifting to margin-aware discounting for high-margin categories[cite: 20, 52].")
+
+with t3:
+    st.markdown(f"## {df.columns.str.title()[0]} Profitability Analysis [cite: 1, 33]")
+    st.markdown(f"**Author:** Jagadeesh N | BBA, SRM IST (2026) [cite: 2, 34]")
+    
+    st.markdown("### 1. Problem Statement")
+    st.write("Q-commerce operates on thin margins due to last-mile costs and discount-heavy growth[cite: 5, 37]. Achieving CM2 positivity is the primary challenge[cite: 6, 38].")
+    
+    st.markdown("### 3. Key Strategic Insights")
+    st.markdown(f"""
+    <div class="case-study-box">
+    <b>AOV is the Strongest Lever:</b> A ₹50-₹70 increase in AOV has a higher impact than 20% volume growth.<br><br>
+    <b>The Scale Paradox:</b> High volume without a healthy contribution margin accelerates "burn"[cite: 15, 47].
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption(f"PROPRIETARY STRATEGY ENGINE | JAGADEESH N | 2026")
-
+st.caption("CONFIDENTIAL | STRATEGY ENGINE | JAGADEESH N 2026")
