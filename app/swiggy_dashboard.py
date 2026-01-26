@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import os
+import itertools
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Instamart Strategy Engine", page_icon="🧡", layout="wide")
@@ -14,7 +15,7 @@ DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
 LOGO_PATH = os.path.join(BASE_DIR, "Logo.png")
 SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 
-# --- CUSTOM EXECUTIVE STYLING ---
+# --- CUSTOM STYLING ---
 st.markdown("""
 <style>
     .stApp { background-color: #262730; }
@@ -69,21 +70,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- KPI CARD FUNCTION ---
-def kpi_card(title, value, delta=None, delta_color="white"):
-    delta_html = ""
-    if delta:
-        delta_html = f"<div style='font-size:0.85rem; opacity:0.85; color:{delta_color}; margin-top:4px;'>{delta}</div>"
-
-    return f"""
-    <div class="kpi-metric">
-        <div style="font-size:1.9rem; font-weight:800;">{value}</div>
-        <div class="kpi-label">{title}</div>
-        {delta_html}
-    </div>
-    """
-
-# --- DATA ENGINE ---
+# --- DATA LOADING & ENRICHMENT ---
 @st.cache_data
 def load_and_enrich():
     if not os.path.exists(DATA_PATH):
@@ -99,7 +86,6 @@ def load_and_enrich():
             df[col] = val
 
     df['order_time'] = pd.to_datetime(df['order_time'])
-
     df['commission'] = df['order_value'] * 0.18
     df['ad_revenue'] = df['order_value'] * 0.05
     df['opex'] = 12
@@ -112,19 +98,24 @@ df = load_and_enrich()
 
 # --- SIDEBAR ---
 with st.sidebar:
+    # Logo
     if os.path.exists(LOGO_PATH):
         st.image(LOGO_PATH, width=120)
     else:
         st.image(SWIGGY_URL, width=120)
 
     st.title("Control Tower")
-    zones = st.multiselect("Geographic Clusters", df['zone'].unique(), df['zone'].unique())
 
-    weather_filter = st.multiselect(
-        "🌦️ Weather Condition",
-        options=df['weather'].unique(),
-        default=df['weather'].unique()
-    )
+    # Theme toggle
+    theme = st.radio("Select Theme", ["Light","Dark"])
+    if theme == "Dark":
+        st.markdown('<style>body{background-color:#262730;color:white;}</style>',unsafe_allow_html=True)
+    else:
+        st.markdown('<style>body{background-color:white;color:black;}</style>',unsafe_allow_html=True)
+
+    # Filters
+    zones = st.multiselect("Geographic Clusters", df['zone'].unique(), df['zone'].unique())
+    weather_filter = st.multiselect("🌦️ Weather Condition", options=df['weather'].unique(), default=df['weather'].unique())
 
     st.divider()
     st.subheader("🛠️ Profitability Simulator")
@@ -132,24 +123,18 @@ with st.sidebar:
     disc_opt = st.slider("Discount Optimization (%)", 0, 100, 20)
     st.info("Simulating impact on Contribution Margin (CM).")
 
-    # --- CONTEXTUAL SCENARIOS ---
-st.subheader("⛈️ Contextual Scenarios")
-scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
+    # Contextual Scenarios + AOV + Marketing
+    st.subheader("⛈️ Contextual Scenarios")
+    scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
+    aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
+    marketing_spend = st.slider("Marketing Spend (₹)", 0, 50000, 0)
 
-# Additional levers
-aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
-marketing_spend = st.slider("Marketing Spend (₹)", 0, 50000, 0)
-
-# Reset button for all sliders
-if st.button("🔄 Reset Levers"):
-    st.experimental_rerun()
-
-
+    # Reset button
+    if st.button("🔄 Reset Levers"):
+        st.experimental_rerun()
 
 # --- SIMULATION ENGINE ---
 f_df = df[df['zone'].isin(zones)].copy()
-
-# Delivery fee & discount adjustments
 f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
 
@@ -161,16 +146,12 @@ elif scenario == "IPL Match Night":
     f_df['order_value'] *= 1.15
     st.sidebar.success("Note: IPL demand spike active (+15% GOV)")
 
-# AOV and Marketing Boost
-f_df['order_value'] += aov_boost + marketing_spend / 1000
-
-# Recalculate commission & net profit
+# AOV + Marketing
+f_df['order_value'] += aov_boost + marketing_spend/1000
 f_df['commission'] = f_df['order_value'] * 0.18
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (
     f_df['delivery_cost'] + f_df['discount'] + f_df['opex']
 )
-
-
 
 # --- HEADER ---
 head_col1, head_col2 = st.columns([1, 6])
@@ -182,22 +163,17 @@ with head_col1:
 with head_col2:
     st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
     st.markdown("#### 🚀 Target: Positive Contribution Margin by June 2026")
-
 st.divider()
 
-# -----------------------------
-# KPI ROW (BLACK SUB-BOX BELOW KPI)
-# -----------------------------
+# --- KPI ROW ---
 total_gov = f_df['order_value'].sum()
 avg_cm = f_df['net_profit'].mean()
 burn_rate = (f_df['discount'].sum() / total_gov) * 100
 orders = len(f_df)
-
 prev_avg_cm = df['gross_margin'].mean()
 delta_cm = avg_cm - prev_avg_cm
 
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-
 with kpi1:
     st.markdown(f'''
     <div class="kpi-metric">
@@ -206,7 +182,6 @@ with kpi1:
         <div class="kpi-subbox">▲ 12% vs LW</div>
     </div>
     ''', unsafe_allow_html=True)
-
 with kpi2:
     st.markdown(f'''
     <div class="kpi-metric">
@@ -215,7 +190,6 @@ with kpi2:
         <div class="kpi-subbox">Sim Δ ₹{delta_cm:.2f}</div>
     </div>
     ''', unsafe_allow_html=True)
-
 with kpi3:
     st.markdown(f'''
     <div class="kpi-metric">
@@ -224,7 +198,6 @@ with kpi3:
         <div class="kpi-subbox">▼ 3.2% Improvement</div>
     </div>
     ''', unsafe_allow_html=True)
-
 with kpi4:
     st.markdown(f'''
     <div class="kpi-metric">
@@ -237,25 +210,26 @@ with kpi4:
 st.divider()
 
 # --- ANALYTICS TABS ---
-t1, t2, t3, t4 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Demand Forecasting"])
+t1, t2, t3, t4, t5 = st.tabs(["📊 Financials", "🏍️ Ops & Logistics", "🥬 Wastage Control", "🧠 Demand Forecasting", "📈 Scenario Comparison"])
 
+# ----- Financials Tab -----
 with t1:
     col_a, col_b = st.columns([2, 1])
     with col_a:
         st.subheader("Unit Economics Breakdown")
         metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
-        vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(),
+        vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
                 -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
 
         fig_water = go.Figure(go.Waterfall(
-            name="Economics", orientation="v",
-            measure=["relative", "relative", "relative", "relative", "relative", "relative", "total"],
-            x=metrics + ['Net Profit'],
-            y=vals + [0],
-            connector={"line": {"color": "rgb(63, 63, 63)"}},
-            decreasing={"marker": {"color": "#EF4444"}},
-            increasing={"marker": {"color": "#60B246"}},
-            totals={"marker": {"color": "#FC8019"}}
+            name = "Economics", orientation = "v",
+            measure = ["relative"]*6 + ["total"],
+            x = metrics + ['Net Profit'],
+            y = vals + [0],
+            connector = {"line":{"color":"rgb(63, 63, 63)"}},
+            decreasing = {"marker":{"color":"#EF4444"}},
+            increasing = {"marker":{"color":"#60B246"}},
+            totals = {"marker":{"color":"#FC8019"}}
         ))
         fig_water.update_layout(title="Average Unit Economics (Per Order)", template="simple_white")
         st.plotly_chart(fig_water, use_container_width=True)
@@ -266,17 +240,36 @@ with t1:
             'Channel': ['Comm', 'Ads', 'Fees'],
             'Rev': [f_df['commission'].sum(), f_df['ad_revenue'].sum(), f_df['delivery_fee'].sum()]
         })
-        st.plotly_chart(px.pie(rev_mix, values='Rev', names='Channel', hole=0.6,
-                               color_discrete_sequence=['#FC8019', '#3D4152', '#60B246']),
-                        use_container_width=True)
+        st.plotly_chart(px.pie(rev_mix, values='Rev', names='Channel', hole=0.6, 
+                               color_discrete_sequence=['#FC8019', '#3D4152', '#60B246']), use_container_width=True)
 
+    # Sensitivity Analysis Table
+    st.subheader("💡 Sensitivity Analysis")
+    fee_range = list(range(0, 51, 10))
+    disc_range = list(range(0, 101, 20))
+    sens_data = []
+
+    for fee, disc in itertools.product(fee_range, disc_range):
+        temp_df = f_df.copy()
+        temp_df['delivery_fee'] += fee
+        temp_df['discount'] *= (1 - disc/100)
+        temp_df['net_profit'] = (temp_df['commission'] + temp_df['ad_revenue'] + temp_df['delivery_fee']) - (
+            temp_df['delivery_cost'] + temp_df['discount'] + temp_df['opex']
+        )
+        sens_data.append({'Delivery Fee Adj (₹)': fee, 'Discount Opt (%)': disc, 'Avg Net Profit': temp_df['net_profit'].mean()})
+
+    sens_df = pd.DataFrame(sens_data)
+    st.dataframe(sens_df.style.format({'Avg Net Profit':'₹{:,.2f}'}), use_container_width=True)
+
+# ----- Ops & Logistics Tab -----
 with t2:
     st.subheader("Logistics Efficiency Heatmap")
     f_df['hour'] = f_df['order_time'].dt.hour
     heat = f_df.pivot_table(index='zone', columns='hour', values='delivery_cost', aggfunc='mean')
-    st.plotly_chart(px.imshow(heat, color_continuous_scale='YlOrRd', aspect="auto"), use_container_width=True)
-    st.info("💡 **Strategy:** Yellow cells indicate cost leakage. Deploy 'Batching' algorithms during these windows.")
+    st.plotly_chart(px.imshow(heat, color_continuous_scale='YlOrRd', aspect="auto", text_auto=True), use_container_width=True)
+    st.info("💡 Yellow cells indicate cost leakage. Deploy 'Batching' algorithms during these windows.")
 
+# ----- Wastage Control Tab -----
 with t3:
     st.subheader("Inventory Salvage Management")
     perishables = f_df[f_df['category'] == 'Perishable'].copy()
@@ -290,24 +283,51 @@ with t3:
             st.success("App Push Notifications Sent!")
             st.balloons()
     with cb:
-        st.plotly_chart(px.box(perishables, x='zone', y='freshness_hrs_left', color='zone',
-                               title="Freshness Variance"), use_container_width=True)
+        st.plotly_chart(px.box(perishables, x='zone', y='freshness_hrs_left', color='zone', title="Freshness Variance"), use_container_width=True)
 
+    # Wastage Trend Over Time
+    st.subheader("🥬 Wastage Risk Trend")
+    risk_trend = perishables.groupby(perishables['order_time'].dt.date)['freshness_hrs_left'].apply(lambda x: (x<12).sum()).reset_index()
+    risk_trend.columns = ['Date','Units at Risk']
+    st.line_chart(risk_trend.set_index('Date'))
+
+# ----- Demand Forecasting Tab -----
 with t4:
     st.subheader("Predictive Demand Sensing (XGBoost Inferred)")
-    f_df['forecast'] = f_df['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
-    hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value', 'forecast']].sum().reset_index()
+    hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value']].sum().reset_index()
+    hist_data['forecast'] = hist_data['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
+    hist_data['upper'] = hist_data['forecast']*1.05
+    hist_data['lower'] = hist_data['forecast']*0.95
 
     fig_pred = go.Figure()
-    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['order_value'],
-                                  name='Actual GOV', line=dict(color='#3D4152')))
-    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['forecast'],
-                                  name='XGBoost Forecast', line=dict(dash='dash', color='#FC8019')))
+    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['order_value'], name='Actual GOV', line=dict(color='#3D4152')))
+    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['forecast'], name='XGBoost Forecast', line=dict(dash='dash', color='#FC8019')))
+    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['upper'], name='Upper Bound', line=dict(dash='dot', color='grey')))
+    fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['lower'], name='Lower Bound', line=dict(dash='dot', color='grey'), fill='tonexty'))
     st.plotly_chart(fig_pred, use_container_width=True)
+
+# ----- Scenario Comparison Tab -----
+with t5:
+    st.subheader("Scenario Comparison (Net Profit)")
+    scenario_comp = pd.DataFrame({
+        "Scenario": ["Normal Operations", "Heavy Rain", "IPL Match Night"],
+        "Net Profit": []
+    })
+    net_profits = []
+    for scen in ["Normal Operations", "Heavy Rain", "IPL Match Night"]:
+        temp_df = df.copy()
+        if scen == "Heavy Rain":
+            temp_df['delivery_cost'] *= 1.3
+        elif scen == "IPL Match Night":
+            temp_df['order_value'] *= 1.15
+        temp_df['commission'] = temp_df['order_value']*0.18
+        temp_df['net_profit'] = (temp_df['commission'] + temp_df['ad_revenue'] + temp_df['delivery_fee']) - (
+            temp_df['delivery_cost'] + temp_df['discount'] + temp_df['opex']
+        )
+        net_profits.append(temp_df['net_profit'].mean())
+    scenario_comp['Net Profit'] = net_profits
+    st.bar_chart(scenario_comp.set_index('Scenario'))
 
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
-
-
-
