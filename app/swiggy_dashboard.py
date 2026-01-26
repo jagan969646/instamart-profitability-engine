@@ -6,7 +6,7 @@ import numpy as np
 import os
 
 # --- ADVANCED ENGINE CONFIG ---
-st.set_page_config(page_title="Instamart Strategy v4.0", page_icon="🧡", layout="wide")
+st.set_page_config(page_title="Instamart Strategy v5.0", page_icon="🧡", layout="wide")
 
 # --- PATHS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,24 +26,22 @@ st.markdown("""
         padding: 25px;
         border-radius: 18px;
         text-align: center;
-        box-shadow: 8px 8px 20px #040506, -2px -2px 10px #1a1f28;
+        box-shadow: 8px 8px 20px #040506;
         border: 1px solid rgba(255,255,255,0.05);
         transition: 0.3s ease;
     }
-    .kpi-box:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(252, 128, 25, 0.4); }
-    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; margin-bottom: 8px; font-weight: 600; }
-    .kpi-value { font-size: 2.2rem; font-weight: 900; }
-    .kpi-sub { font-size: 0.8rem; margin-top: 10px; background: rgba(0,0,0,0.25); border-radius: 20px; padding: 4px 12px; display: inline-block; }
+    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; margin-bottom: 8px; font-weight: 600; color: white; }
+    .kpi-value { font-size: 2.2rem; font-weight: 900; color: white; }
+    .kpi-sub { font-size: 0.8rem; margin-top: 10px; background: rgba(0,0,0,0.25); border-radius: 20px; padding: 4px 12px; display: inline-block; color: white; }
 
-    /* The 'Green Screen' Command Center */
+    /* Terminal Command Center */
     .terminal-box {
         background-color: #000000;
         border: 1px solid #2ECC71;
         padding: 20px;
         border-radius: 12px;
-        font-family: 'Consolas', 'Courier New', monospace;
+        font-family: 'Consolas', monospace;
         margin-bottom: 25px;
-        box-shadow: inset 0 0 15px rgba(46, 204, 113, 0.2);
     }
     .terminal-line { color: #2ECC71; font-size: 0.95rem; line-height: 1.6; }
     .status-pulse { color: #2ECC71; animation: blinker 2s linear infinite; }
@@ -57,17 +55,18 @@ st.markdown("""
 @st.cache_data
 def load_and_engineer():
     if not os.path.exists(DATA_PATH):
-        st.error("🚨 DATABASE_OFFLINE: Ensure swiggy_simulated_data.csv is in the directory.")
+        st.error("🚨 DATABASE_OFFLINE: swiggy_simulated_data.csv not found.")
         st.stop()
     df = pd.read_csv(DATA_PATH)
     df.columns = df.columns.str.strip().str.lower()
     
-    # Auto-Schema Alignment & Heuristics
+    # Schema Alignment
     if 'delivery_fee' not in df.columns: df['delivery_fee'] = 15.0
+    if 'category' not in df.columns: df['category'] = 'fmcg'
+    if 'freshness_hrs_left' not in df.columns: df['freshness_hrs_left'] = 24
+    
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['hour'] = df['order_time'].dt.hour
-    
-    # Financial Base Engineering
     df['base_comm'] = df['order_value'] * 0.18
     df['ad_rev'] = df['order_value'] * 0.05
     df['fixed_opex'] = 14.0
@@ -75,92 +74,79 @@ def load_and_engineer():
 
 df = load_and_engineer()
 
-# --- SIDEBAR: STRATEGY CONTROL TOWER ---
+# --- SIDEBAR: STRATEGY CONTROL ---
 with st.sidebar:
     st.image(LOGO_PATH if os.path.exists(LOGO_PATH) else SWIGGY_URL, width=150)
-    st.markdown("### 🏹 Profitability Levers")
+    st.title("Control Tower")
     
-    aov_expansion = st.select_slider("Basket Size Strategy (AOV)", options=[0, 25, 50, 75, 100, 150], value=50)
-    fee_leverage = st.slider("Dynamic Surge Premium (₹)", 0, 100, 30)
-    disc_rationalization = st.slider("Subsidy Optimization (%)", 0, 100, 20)
+    st.subheader("🌦️ Environmental Overlays")
+    weather = st.selectbox("Current Weather", ["Clear", "Cloudy", "Rainy", "Stormy"])
     
-    st.divider()
-    st.markdown("### 🌏 Risk Environment")
-    market_flux = st.select_slider("Market Volatility", options=["Stable", "Moderate", "Extreme"], value="Moderate")
-    scenario = st.selectbox("Active Market Scenario", ["Neutral", "Monsoon Peak", "Flash Sale Event"])
+    st.subheader("🏹 Profitability Levers")
+    aov_expansion = st.slider("AOV Boost (₹)", 0, 150, 45)
+    fee_leverage = st.slider("Dynamic Surge (₹)", 0, 80, 20)
+    disc_reduction = st.slider("Subsidy Reduction (%)", 0, 100, 25)
 
-# --- PROBABILISTIC SIMULATION ENGINE ---
+# --- SIMULATION LOGIC ---
 f_df = df.copy()
 
-# Market Volatility Mapping
-vol_map = {"Stable": 0.02, "Moderate": 0.06, "Extreme": 0.15}
-noise = np.random.normal(1, vol_map[market_flux], len(f_df))
+# Weather & Risk Logic
+weather_impact = {
+    "Clear": {"cost": 1.0, "demand": 1.0},
+    "Cloudy": {"cost": 1.1, "demand": 1.1},
+    "Rainy": {"cost": 1.45, "demand": 1.7},
+    "Stormy": {"cost": 2.0, "demand": 0.4}
+}
 
-# Apply Scenario Modifiers
-if scenario == "Monsoon Peak":
-    f_df['delivery_cost'] *= (1.45 * noise)
-    f_df['order_value'] *= 0.95
-elif scenario == "Flash Sale Event":
-    f_df['order_value'] *= (1.30 * noise)
-    f_df['delivery_cost'] *= 1.20
+# Apply Environmental Factors
+f_df['delivery_cost'] *= weather_impact[weather]['cost']
+f_df['order_value'] *= weather_impact[weather]['demand']
 
 # Apply Strategic Levers
 f_df['order_value'] += aov_expansion
 f_df['delivery_fee'] += fee_leverage
-f_df['discount'] *= (1 - disc_rationalization/100)
+f_df['discount'] *= (1 - disc_reduction/100)
 
-# Final CM2 Architecture
+# Final Financial Calculation
 f_df['net_profit'] = (f_df['base_comm'] + f_df['ad_rev'] + f_df['delivery_fee']) - \
                      (f_df['delivery_cost'] + f_df['discount'] + f_df['fixed_opex'])
 
-# --- MAIN DASHBOARD INTERFACE ---
-st.markdown("<h1 style='color: #FC8019; margin-bottom:0;'>Instamart Strategic War Room <span style='font-size: 14px; color:#555;'>SYSTEM_v4.0.1</span></h1>", unsafe_allow_html=True)
+# --- HEADER ---
+st.markdown("<h1 style='color: #FC8019; margin-bottom:0;'>Instamart Strategic War Room</h1>", unsafe_allow_html=True)
+st.markdown("<p style='color: #666; margin-top:0;'>Location, Weather & Wastage Control v5.0</p>", unsafe_allow_html=True)
 
-# --- 4 ORANGE KPI CARDS ---
+# --- 4 ORANGE KPI ROW ---
 k1, k2, k3, k4 = st.columns(4)
-gov_total = (f_df['order_value'].sum() / 1e6)
-avg_profit = f_df['net_profit'].mean()
-cm_margin = (f_df['net_profit'].sum() / f_df['order_value'].sum()) * 100
-system_alpha = (avg_profit / 15.0) * 100 # Performance against internal benchmark
+gov = f_df['order_value'].sum() / 1e6
+avg_p = f_df['net_profit'].mean()
+cm_pct = (f_df['net_profit'].sum() / f_df['order_value'].sum()) * 100
+alpha = (avg_p / 15.0) * 100
 
-metrics = [
-    ("Projected GOV", f"₹{gov_total:.2f}M", "↑ 14.5% vs LW"),
-    ("CM2 / Order", f"₹{avg_profit:.2f}", f"Δ ₹{avg_profit-12.5:.1f} vs Baseline"),
-    ("CM % Margin", f"{cm_margin:.1f}%", "Health: Optimal"),
-    ("System Alpha", f"{system_alpha:.1f} pts", "Target: 110 pts")
-]
+for col, l, v, s in zip([k1, k2, k3, k4], 
+                        ["Projected GOV", "CM2 / Order", "CM % Margin", "System Alpha"],
+                        [f"₹{gov:.2f}M", f"₹{avg_p:.2f}", f"{cm_pct:.1f}%", f"{alpha:.1f}pts"],
+                        ["↑ 12% vs LW", f"Δ ₹{avg_p-12:.1f} vs Base", "Health: Optimal", "Target: 110"]):
+    col.markdown(f'<div class="kpi-box"><div class="kpi-label">{l}</div><div class="kpi-value">{v}</div><div class="kpi-sub">{s}</div></div>', unsafe_allow_html=True)
 
-for col, (label, val, sub) in zip([k1, k2, k3, k4], metrics):
-    col.markdown(f"""
-        <div class="kpi-box">
-            <div class="kpi-label">{label}</div>
-            <div class="kpi-value">{val}</div>
-            <div class="kpi-sub">{sub}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-# --- THE GREEN COMMAND TERMINAL ---
+# --- GREEN TERMINAL ---
 st.markdown(f"""
 <div class="terminal-box">
     <div class="terminal-line">
-        <span class="status-pulse">●</span> SIMULATION_LOG: {scenario.upper()} // VOLATILITY_{market_flux.upper()}<br>
-        > LEVERS: AOV(+₹{aov_expansion}) | FEE(+₹{fee_leverage}) | DISC_RED({disc_rationalization}%)<br>
-        > REVENUE_VECTOR: Comm(₹{f_df['base_comm'].mean():.2f}) | Ads(₹{f_df['ad_rev'].mean():.2f}) | Fee(₹{f_df['delivery_fee'].mean():.2f})<br>
-        > <span style="color:#FFF">OUTCOME_ANALYSIS: CM2 POSITIVITY ACHIEVED AT ₹{avg_profit:.2f} AVG PER VECTOR.</span>
+        <span class="status-pulse">●</span> WEATHER_STATUS: {weather.upper()} | LOGISTICS_FRICTION: {weather_impact[weather]['cost']}x<br>
+        > STRATEGY_LOADED: AOV(+₹{aov_expansion}) | SURGE(+₹{fee_leverage}) | DISC_RED({disc_reduction}%)<br>
+        > <span style="color:#FFF">FINANCIAL_OUTLOOK: CM2 Positivity estimated at ₹{avg_p:.2f} per vector.</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # --- ANALYTICS SUITE ---
-tabs = st.tabs(["💎 Financial Architecture", "📍 Regional Intelligence", "📈 Monte Carlo Risk"])
+tabs = st.tabs(["💎 Financials", "📍 Zonal Risk", "🥬 Wastage Salvage", "📈 Risk Distribution"])
 
 with tabs[0]:
-    st.subheader("Unit Economics: CM2 Waterfall Structure")
-    
-    comps = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discounts', 'OPEX']
+    st.subheader("Contribution Margin 2 Waterfall")
+    comps = ['Comm', 'Ads', 'Fees', 'Logistics', 'Discounts', 'OPEX']
     vals = [f_df['base_comm'].mean(), f_df['ad_rev'].mean(), f_df['delivery_fee'].mean(), 
             -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -14.0]
-    
     fig_water = go.Figure(go.Waterfall(
         orientation="v", measure=["relative"]*6 + ["total"],
         x=comps + ['Final CM2'], y=vals + [0],
@@ -168,24 +154,39 @@ with tabs[0]:
         decreasing={"marker":{"color":"#FF4B4B"}},
         increasing={"marker":{"color":"#2ECC71"}}
     ))
-    fig_water.update_layout(template="plotly_dark", height=450, plot_bgcolor='rgba(0,0,0,0)')
+    fig_water.update_layout(template="plotly_dark", height=450)
     st.plotly_chart(fig_water, use_container_width=True)
 
 with tabs[1]:
     st.subheader("Hourly Zonal Profitability Heatmap")
     z_heat = f_df.pivot_table(index='zone', columns='hour', values='net_profit', aggfunc='mean')
     fig_heat = px.imshow(z_heat, color_continuous_scale='RdYlGn', aspect="auto")
-    fig_heat.update_layout(template="plotly_dark", title="CM2 Net per Region/Time Window")
+    fig_heat.update_layout(template="plotly_dark")
     st.plotly_chart(fig_heat, use_container_width=True)
-    st.info("💡 **Strategy Hint:** Deep Red cells indicate 'Burn Zones'. Consider implementing batch-delivery rules for these windows.")
 
 with tabs[2]:
-    st.subheader("Monte Carlo Simulation: Profit Variance Distribution")
+    st.subheader("Automated Inventory Salvage Engine")
+    df_risk = f_df[(f_df['category'].str.lower() == 'perishable') & (f_df['freshness_hrs_left'] < 12)].copy()
     
-    fig_risk = px.histogram(f_df, x='net_profit', nbins=100, color_discrete_sequence=['#FC8019'],
-                           marginal="box", title="Monte Carlo Vector Outcomes")
-    fig_risk.update_layout(template="plotly_dark")
-    st.plotly_chart(fig_risk, use_container_width=True)
+    c_w1, c_w2 = st.columns([1, 2])
+    with c_w1:
+        st.error(f"⚠️ {len(df_risk)} Units at Expiry Risk")
+        st.metric("Potential EBITDA Loss", f"₹{df_risk['order_value'].sum():,.0f}")
+        salvage_depth = st.select_slider("Flash Sale Intensity", options=["20%", "40%", "60%", "80%"])
+        if st.button("🚀 TRIGGER PUSH NOTIFICATIONS"):
+            st.success(f"Sent Flash Sale to {len(df_risk)*12} customers in affected zones!")
+            st.balloons()
+    with c_w2:
+        fig_risk = px.scatter(df_risk, x="zone", y="freshness_hrs_left", size="order_value", 
+                             color="delivery_cost", title="Location-Based Wastage Risk",
+                             color_continuous_scale="Reds", template="plotly_dark")
+        st.plotly_chart(fig_risk, use_container_width=True)
+
+with tabs[3]:
+    st.subheader("Monte Carlo Simulation: Outcome Distribution")
+    fig_dist = px.histogram(f_df, x='net_profit', nbins=100, color_discrete_sequence=['#FC8019'], marginal="rug")
+    fig_dist.update_layout(template="plotly_dark")
+    st.plotly_chart(fig_dist, use_container_width=True)
 
 st.markdown("---")
-st.caption("Strategic Analyst Portfolio | Jagadeesh N. | Data Driven Decisions 2026")
+st.caption("Strategic Analyst Portfolio | Jagadeesh N | 2026")
