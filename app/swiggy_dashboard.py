@@ -127,17 +127,6 @@ with st.sidebar:
     options=df['weather'].unique(),
     default=df['weather'].unique()
 )
-st.sidebar.subheader("⛈️ Contextual Scenarios")
-scenario = st.sidebar.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
-
-if scenario == "Heavy Rain":
-    f_df['delivery_cost'] *= 1.3  # Surge in rider payouts
-    st.sidebar.warning("Note: Rain surge active (Costs +30%)")
-elif scenario == "IPL Match Night":
-    f_df['order_value'] *= 1.15  # Surge in snack/beverage demand
-    st.sidebar.success("Note: IPL demand spike active (+15% GOV)")
-
-
 
     st.divider()
     st.subheader("🛠️ Profitability Simulator")
