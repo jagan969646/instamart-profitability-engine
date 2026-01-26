@@ -295,9 +295,9 @@ with t3:
 with t4:
     st.subheader("Predictive Demand Sensing (XGBoost Inferred)")
     hist_data = f_df.groupby(f_df['order_time'].dt.date)[['order_value']].sum().reset_index()
-    hist_data['forecast'] = hist_data['order_value'] * np.random.uniform(0.9, 1.1, len(f_df))
-    hist_data['upper'] = hist_data['forecast']*1.05
-    hist_data['lower'] = hist_data['forecast']*0.95
+    hist_data['forecast'] = hist_data['order_value'] * np.random.uniform(0.9, 1.1, len(hist_data))  # fixed length
+    hist_data['upper'] = hist_data['forecast'] * 1.05
+    hist_data['lower'] = hist_data['forecast'] * 0.95
 
     fig_pred = go.Figure()
     fig_pred.add_trace(go.Scatter(x=hist_data['order_time'], y=hist_data['order_value'], name='Actual GOV', line=dict(color='#3D4152')))
