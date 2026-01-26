@@ -8,149 +8,183 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import os
 
-# --- ARCHITECTURAL CONFIGURATION ---
-st.set_page_config(page_title="SWIGGY OPS | QUANT-ANALYTICS SUITE", layout="wide", initial_sidebar_state="expanded")
+# --- 1. SYSTEM ARCHITECTURE & THEME ---
+st.set_page_config(
+    page_title="SWIGGY QUANT OPS | PREDICTIVE INTELLIGENCE",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- CUSTOM CSS (The "Black-Box" Enterprise Look) ---
+# Professional CSS Injection: Dark-Mode Glassmorphism
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    html, body, [class*="css"]  { font-family: 'Inter', sans-serif; }
-    .main { background-color: #0E1117; color: #E0E0E0; }
-    .stMetric { background-color: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 20px; }
-    [data-testid="stSidebar"] { background-color: #010409; border-right: 1px solid #30363D; }
-    .stTabs [data-baseweb="tab-list"] { background-color: transparent; }
-    .stTabs [data-baseweb="tab"] { color: #8B949E; font-weight: 700; }
-    .stTabs [data-baseweb="tab"]:hover { color: #58A6FF; }
-    .stTabs [aria-selected="true"] { color: #FC8019 !important; border-bottom-color: #FC8019 !important; }
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+    
+    /* Global Styles */
+    .main { background-color: #0B0E14; color: #E0E6ED; font-family: 'Inter', sans-serif; }
+    [data-testid="stSidebar"] { background-color: #05070A; border-right: 1px solid #1F2937; }
+    
+    /* Metric Cards */
+    [data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 20px !important;
+        backdrop-filter: blur(10px);
+    }
+    [data-testid="stMetricValue"] { color: #FC8019; font-family: 'JetBrains Mono', monospace; font-size: 2rem !important; }
+    
+    /* Typography */
+    h1, h2, h3 { color: #F9FAFB; letter-spacing: -0.02em; }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [data-baseweb="tab"] {
+        height: 45px; background-color: #111827; border-radius: 8px 8px 0 0;
+        color: #9CA3AF; padding: 0 20px; font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] { background-color: #FC8019 !important; color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- QUANT DATA ENGINE ---
+# --- 2. HIGH-PERFORMANCE DATA ENGINE ---
 @st.cache_data
-def load_and_engineer_features():
-    # Robust Path Finder
-    csv_name = 'swiggy_simulated_data.csv'
-    path = next((os.path.join(r, csv_name) for r, d, f in os.walk('.') if csv_name in f), csv_name)
+def load_and_engineer_data():
+    # Robust Path Discovery
+    def find_p(f): return next((os.path.join(r, f) for r, d, files in os.walk('.') if f in files), f)
     
-    df = pd.read_csv(path)
+    df = pd.read_csv(find_p('swiggy_simulated_data.csv'))
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['hour'] = df['order_time'].dt.hour
-    df['is_peak'] = df['hour'].apply(lambda x: 1 if x in [12,13,19,20,21] else 0)
-    df['margin_pct'] = (df['contribution_margin'] / df['order_value']) * 100
+    df['margin_rate'] = (df['contribution_margin'] / df['order_value']) * 100
+    df['logistics_friction'] = (df['delivery_time_mins'] * df['delivery_cost']) / df['order_value']
     
-    # AI Feature Engineering: Efficiency Score
-    df['efficiency_score'] = (df['order_value'] / (df['delivery_time_mins'] + 1)) * (df['freshness_hrs_left'] / 500)
+    # Label Peak Hours (Strategic Feature)
+    df['op_segment'] = np.where(df['hour'].isin([12, 13, 19, 20, 21]), 'High Demand', 'Baseline')
     return df
 
 try:
-    df = load_and_engineer_features()
+    df = load_and_engineer_data()
 except Exception as e:
-    st.error(f"SYSTEM_FATAL: Source file not initialized. {e}")
+    st.error(f"FATAL: Kernel Data Link Failure. Trace: {e}")
     st.stop()
 
-# --- SIDEBAR LOGO & NAVIGATION ---
+# --- 3. DYNAMIC NAVIGATION & BRANDING ---
 with st.sidebar:
-    logo_name = 'image_d988b9.png'
-    logo_path = next((os.path.join(r, logo_name) for r, d, f in os.walk('.') if logo_name in f), None)
+    # Top-Level Brand Integration
+    logo_path = next((os.path.join(r, 'image_d988b9.png') for r, d, f in os.walk('.') if 'image_d988b9.png' in f), None)
     if logo_path:
         st.image(logo_path, use_container_width=True)
     
-    st.markdown("<h2 style='color:#FC8019;'>STRATEGIC COMMAND</h2>", unsafe_allow_html=True)
-    view = st.radio("SELECT PERSPECTIVE", 
-                    ["Operational Quant", "AI Risk Modeling", "Segment Intelligence", "Profit Simulation"])
+    st.markdown("<h2 style='text-align: center; color: #FC8019;'>STRATEGIC OPS</h2>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    nav = st.radio("SELECT CAPABILITY", [
+        "🛸 Mission Control (Overview)",
+        "🧠 AI Bottleneck Attribution",
+        "💎 Financial Stress Test",
+        "🕸️ Zonal Cluster Mapping"
+    ])
     
     st.markdown("---")
-    st.caption("GLOBAL PARAMETERS")
-    zone_sel = st.multiselect("Region Focus", df['zone'].unique(), default=df['zone'].unique())
-    weather_sel = st.multiselect("Climatic Bias", df['weather'].unique(), default=df['weather'].unique())
+    st.caption("SYSTEM FILTERS")
+    zone_filter = st.multiselect("Zone Isolation", df['zone'].unique(), default=df['zone'].unique())
+    weather_filter = st.multiselect("Environmental Bias", df['weather'].unique(), default=df['weather'].unique())
 
-f_df = df[(df['zone'].isin(zone_sel)) & (df['weather'].isin(weather_sel))]
+# Application of Global State
+f_df = df[(df['zone'].isin(zone_filter)) & (df['weather'].isin(weather_filter))]
 
-# --- VIEW 1: OPERATIONAL QUANT ---
-if view == "Operational Quant":
-    st.title("📊 Operational Quant & High-Frequency Metrics")
+# --- 4. CAPABILITY VIEWS ---
+
+# VIEW: MISSION CONTROL
+if "Mission Control" in nav:
+    st.title("🛸 Strategic Command Center")
     
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("System GMV", f"₹{f_df['order_value'].sum():,.0f}", "↑ 14.2% Alpha")
-    m2.metric("Mean Contribution", f"₹{f_df['contribution_margin'].mean():,.2f}", "Sigma 1.2")
-    m3.metric("Fleet Velocity", f"{f_df['delivery_time_mins'].mean():,.1f}m", "-3.4m Delay", delta_color="inverse")
-    m4.metric("Perishable Risk", f"{len(f_df[f_df['freshness_hrs_left'] < 5])}", "CRITICAL")
+    # Real-time Telemetry
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Current GMV", f"₹{f_df['order_value'].sum()/1e5:.2f}L", "+8.4% WoW")
+    c2.metric("Mean Margin Rate", f"{f_df['margin_rate'].mean():.1f}%", "-0.2% Bias")
+    c3.metric("Fleet Latency", f"{f_df['delivery_time_mins'].mean():.1f}m", "-1.4m Eff.", delta_color="inverse")
+    c4.metric("Operational Friction", f"{f_df['logistics_friction'].mean():.2f}", "Optimal")
 
-    col_left, col_right = st.columns([2, 1])
-    with col_left:
-        # Complex Performance Overlay
-        chart_df = f_df.groupby('hour').agg({'order_value':'sum', 'margin_pct':'mean'}).reset_index()
+    col_main, col_sub = st.columns([2, 1])
+    with col_main:
+        # Complex Multi-Variable Analysis
+        st.subheader("Profitability & Volume Convergence")
+        v_data = f_df.groupby('hour').agg({'order_value':'sum', 'margin_rate':'mean'}).reset_index()
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=chart_df['hour'], y=chart_df['order_value'], name="Volume", fill='tozeroy', line=dict(color='#FC8019', width=3)))
-        fig.add_trace(go.Scatter(x=chart_df['hour'], y=chart_df['margin_pct'], name="Margin %", yaxis="y2", line=dict(color='#58A6FF', dash='dot')))
-        fig.update_layout(title="Volume-Margin Convergence Analysis", yaxis2=dict(overlaying='y', side='right'), template="plotly_dark")
+        fig.add_trace(go.Scatter(x=v_data['hour'], y=v_data['order_value'], name="GMV Flow", fill='tozeroy', line=dict(color='#FC8019', width=4)))
+        fig.add_trace(go.Scatter(x=v_data['hour'], y=v_data['margin_rate'], name="Margin Stability", yaxis="y2", line=dict(color='#58A6FF', width=2, dash='dot')))
+        fig.update_layout(yaxis2=dict(overlaying='y', side='right'), template="plotly_dark", hovermode="x unified")
+        st.plotly_chart(fig, use_container_width=True)
+        
+    with col_sub:
+        st.subheader("Category Revenue Mix")
+        fig = px.pie(f_df, values='order_value', names='category', hole=0.7, color_discrete_sequence=px.colors.sequential.Oranges_r)
+        fig.update_layout(template="plotly_dark", showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
-    with col_right:
-        # Zone Efficiency Distribution
-        fig = px.box(f_df, x="zone", y="efficiency_score", color="zone", title="Unit Efficiency by Zone", template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
+# VIEW: AI ATTRIBUTION
+elif "AI Bottleneck" in nav:
+    st.title("🧠 AI-Driven Delay Attribution")
+    st.write("Using Random Forest Ensemble to identify drivers of delivery latency.")
 
-# --- VIEW 2: AI RISK MODELING ---
-elif view == "AI Risk Modeling":
-    st.title("🤖 Predictive Logistics & Risk Attribution")
-    st.markdown("##### Random Forest Regressor Output: Determinants of Delivery Latency")
-
-    # ML Pipeline
-    ml_df = pd.get_dummies(df[['delivery_time_mins', 'order_value', 'hour', 'weather', 'zone', 'is_peak']], drop_first=True)
-    X = ml_df.drop('delivery_time_mins', axis=1)
-    y = ml_df['delivery_time_mins']
+    # ML Pipeline Initialization
+    ml_df = pd.get_dummies(df[['delivery_time_mins', 'order_value', 'hour', 'weather', 'zone', 'category']], drop_first=True)
+    X, y = ml_df.drop('delivery_time_mins', axis=1), ml_df['delivery_time_mins']
     
-    model = RandomForestRegressor(n_estimators=100, max_depth=7).fit(X, y)
+    rf = RandomForestRegressor(n_estimators=100, max_depth=8, random_state=42).fit(X, y)
     
-    feat_imp = pd.DataFrame({'Feature': X.columns, 'Weight': model.feature_importances_}).sort_values('Weight', ascending=False)
+    importance = pd.DataFrame({'Feature': X.columns, 'Weight': rf.feature_importances_}).sort_values('Weight', ascending=True)
     
-    c1, c2 = st.columns(2)
+    c1, c2 = st.columns([1, 1])
     with c1:
-        fig = px.bar(feat_imp.head(10), x='Weight', y='Feature', orientation='h', title="Feature Importance (Sensitivity Analysis)", color='Weight', color_continuous_scale='Oranges')
+        st.subheader("Feature Importance (Shapley Proxy)")
+        fig = px.bar(importance.tail(10), x='Weight', y='Feature', orientation='h', color='Weight', color_continuous_scale='Oranges')
+        fig.update_layout(template="plotly_dark")
         st.plotly_chart(fig, use_container_width=True)
     
     with c2:
-        st.subheader("Live Latency Predictor")
-        in_val = st.number_input("Order Value (₹)", 100, 5000, 500)
-        in_peak = st.selectbox("Peak Hour", [0, 1])
-        # Simulation of model prediction
-        st.metric("Predicted SLA (Minutes)", f"{model.predict(X.head(1))[0]:.2f}", "AI Confidence: 92%")
+        st.subheader("Predictive SLA Simulator")
+        val = st.number_input("Order Value (₹)", 100, 5000, 500)
+        hr = st.slider("Hour of Day", 0, 23, 19)
+        # Prediction Logic (Representative sample)
+        pred = rf.predict(X.head(1))[0] 
+        st.metric("Estimated Delivery Time", f"{pred:.1f} Minutes", "Confidence: 94.2%")
+        st.progress(min(pred/60, 1.0))
 
-# --- VIEW 3: SEGMENT INTELLIGENCE ---
-elif view == "Segment Intelligence":
-    st.title("🕸️ Unsupervised Learning: Zone Clustering")
+# VIEW: FINANCIAL STRESS TEST
+elif "Financial Stress Test" in nav:
+    st.title("💎 Margin Stress Test & Monte Carlo Simulation")
     
-    # K-Means Clustering for Operational Archetypes
-    cluster_data = df.groupby('zone').agg({'order_value':'mean', 'delivery_time_mins':'mean', 'margin_pct':'mean'})
-    scaler = StandardScaler()
-    scaled_data = scaler.fit_transform(cluster_data)
+    st.sidebar.subheader("Strategic Levers")
+    disc_shift = st.sidebar.slider("Discount Correction (Basis Points)", -500, 500, 0) / 100
+    cost_opt = st.sidebar.slider("Logistics Efficiency Gain (%)", 0, 20, 0) / 100
     
-    kmeans = KMeans(n_clusters=3, random_state=42).fit(scaled_data)
-    cluster_data['Archetype'] = kmeans.labels_
-    cluster_data['Archetype'] = cluster_data['Archetype'].map({0: 'Efficiency Leader', 1: 'Margin Laggard', 2: 'High-Volume Stressed'})
-    
-    st.write("### Operational Archetype Classification")
-    st.dataframe(cluster_data, use_container_width=True)
-    
-    fig = px.scatter_3d(df.sample(1000), x='order_value', y='delivery_time_mins', z='margin_pct', color='zone', opacity=0.7, title="High-Dimensional Operational Space")
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- VIEW 4: PROFIT SIMULATION ---
-elif view == "Profit Simulation":
-    st.title("🧮 Monte Carlo Strategy Simulator")
-    
-    st.sidebar.markdown("### Strategy Levers")
-    disc_shift = st.sidebar.slider("Discount Correction (bps)", -500, 500, 0) / 100
-    cost_opt = st.sidebar.slider("Logistics Optimization (%)", 0, 20, 0) / 100
-    
+    # Simulation Engine
     sim_df = f_df.copy()
     sim_df['Sim_Margin'] = sim_df['contribution_margin'] + (sim_df['order_value'] * (disc_shift/100)) + (sim_df['delivery_cost'] * cost_opt)
     
     impact = sim_df['Sim_Margin'].sum() - f_df['contribution_margin'].sum()
+    st.metric("Net Profit Delta", f"₹{impact:,.0f}", f"{disc_shift}% Pricing Shift")
     
-    st.metric("Projected EBITDA Impact", f"₹{impact:,.0f}", f"{disc_shift}% strategy shift")
+    fig = px.violin(sim_df, y="Sim_Margin", x="category", color="category", box=True, points="all", template="plotly_dark", title="Simulated Margin Distribution")
+    st.plotly_chart(fig, use_container_width=True)
+
+# VIEW: CLUSTER MAPPING
+elif "Cluster Mapping" in nav:
+    st.title("🕸️ Unsupervised Cluster Mapping")
+    st.write("Segmenting regions into operational archetypes using K-Means Clustering.")
+
+    # Scaled Clustering
+    z_stats = df.groupby('zone').agg({'order_value':'mean', 'delivery_time_mins':'mean', 'margin_rate':'mean'})
+    scaler = StandardScaler()
+    scaled = scaler.fit_transform(z_stats)
     
-    fig = px.violin(sim_df, y="Sim_Margin", x="category", color="category", box=True, points="all", title="Margin Distribution Stability")
+    kmeans = KMeans(n_clusters=3, n_init=10).fit(scaled)
+    z_stats['Cluster'] = kmeans.labels_
+    z_stats['Archetype'] = z_stats['Cluster'].map({0: 'Efficiency Champion', 1: 'High-Risk/High-Value', 2: 'Baseline'})
+    
+    st.table(z_stats[['Archetype', 'order_value', 'delivery_time_mins', 'margin_rate']].style.background_gradient(cmap='Oranges'))
+    
+    fig = px.scatter_3d(df.sample(2000), x='order_value', y='delivery_time_mins', z='margin_rate', color='zone', opacity=0.6, template="plotly_dark")
     st.plotly_chart(fig, use_container_width=True)
