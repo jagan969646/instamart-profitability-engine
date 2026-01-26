@@ -309,25 +309,39 @@ with t4:
 # ----- Scenario Comparison Tab -----
 with t5:
     st.subheader("Scenario Comparison (Net Profit)")
-    scenario_comp = pd.DataFrame({
-        "Scenario": ["Normal Operations", "Heavy Rain", "IPL Match Night"],
-        "Net Profit": []
-    })
+    
+    # 1. Calculate the values first
+    scenarios = ["Normal Operations", "Heavy Rain", "IPL Match Night"]
     net_profits = []
-    for scen in ["Normal Operations", "Heavy Rain", "IPL Match Night"]:
+    
+    for scen in scenarios:
         temp_df = df.copy()
         if scen == "Heavy Rain":
             temp_df['delivery_cost'] *= 1.3
         elif scen == "IPL Match Night":
             temp_df['order_value'] *= 1.15
-        temp_df['commission'] = temp_df['order_value']*0.18
+            
+        temp_df['commission'] = temp_df['order_value'] * 0.18
         temp_df['net_profit'] = (temp_df['commission'] + temp_df['ad_revenue'] + temp_df['delivery_fee']) - (
             temp_df['delivery_cost'] + temp_df['discount'] + temp_df['opex']
         )
         net_profits.append(temp_df['net_profit'].mean())
-    scenario_comp['Net Profit'] = net_profits
+    
+    # 2. Now create the DataFrame with matching lengths
+    scenario_comp = pd.DataFrame({
+        "Scenario": scenarios,
+        "Net Profit": net_profits
+    })
+    
+    # 3. Display the chart
     st.bar_chart(scenario_comp.set_index('Scenario'))
-
+    
+    st.info("""
+    💡 **Executive Insight:** IPL Match Nights drive the highest profitability due to higher AOV, 
+    even if operational overhead increases slightly. Heavy Rain remains the biggest margin killer 
+    due to rider payout surges.
+    """)
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
