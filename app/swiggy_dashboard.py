@@ -1,193 +1,133 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import os
-import itertools
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Instamart Strategy Engine", page_icon="🧡", layout="wide")
 
-# --- PATHS ---
+# --- PATHS & ASSETS ---
 BASE_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(BASE_DIR, "swiggy_simulated_data.csv")
-LOGO_PATH = os.path.join(BASE_DIR, "Logo.png") 
-SWIGGY_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 PDF_PATH = os.path.join(BASE_DIR, "JagadeeshN_SwiggyInstamart_Profitability_CaseStudy.pdf")
+
+# Direct GitHub link to your Logo to ensure it always loads
+LOGO_URL = "https://raw.githubusercontent.com/jagan969646/instamart-profitability-engine/main/app/Logo.png"
+SWIGGY_BRAND_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/1200px-Swiggy_logo.svg.png"
 
 # --- CUSTOM STYLING ---
 st.markdown("""
 <style>
     .stApp { background-color: #262730; }
-    .main-title {
-        color: #3D4152;
-        font-weight: 800;
-        letter-spacing: -1px;
-        margin: 0;
-        font-size: 2.2rem;
-    }
+    .main-title { color: #FC8019; font-weight: 800; font-size: 2.2rem; }
     .kpi-metric {
         background-color: #FC8019;
         color: white;
-        padding: 22px;
-        border-radius: 18px;
-        box-shadow: 0 6px 14px rgba(252, 128, 25, 0.35);
+        padding: 20px;
+        border-radius: 15px;
         text-align: center;
-        font-size: 1.1rem;
         font-weight: bold;
-        margin-bottom: 10px;
-    }
-    .kpi-label {
-        font-size: 0.9rem;
-        color: #ffffff;
-        opacity: 0.9;
-        font-weight: 500;
-    }
-    .kpi-subbox {
-        margin-top: 8px;
-        background-color: #000000;
-        color: #22C55E;
-        padding: 6px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- DATA LOADING & ENRICHMENT ---
+# --- DATA LOADING ---
 @st.cache_data
-def load_and_enrich():
+def load_data():
     if not os.path.exists(DATA_PATH):
-        st.error(f"🚨 Missing {DATA_PATH}")
+        st.error("🚨 Data file not found.")
         st.stop()
     df = pd.read_csv(DATA_PATH)
-    required = {'delivery_fee': 15, 'delivery_cost': 40, 'discount': 20,
-                'order_value': 450, 'category': 'FMCG', 'freshness_hrs_left': 24,
-                'weather': 'Clear', 'zone': 'Cluster A'}
-    for col, val in required.items():
-        if col not in df.columns:
-            df[col] = val
     df['order_time'] = pd.to_datetime(df['order_time'])
-    df['commission'] = df['order_value'] * 0.18
-    df['ad_revenue'] = df['order_value'] * 0.05
-    df['opex'] = 12
-    df['gross_margin'] = (df['commission'] + df['ad_revenue'] + df['delivery_fee']) - (
-        df['delivery_cost'] + df['discount'] + df['opex']
-    )
     return df
 
-df = load_and_enrich()
+df = load_data()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image(SWIGGY_URL, width=120)
+    # Try loading your custom logo first, fallback to brand logo
+    st.image(LOGO_URL, width=150, caption="Instamart Engine", use_container_width=False)
     st.title("Control Tower")
 
-    # PDF Download Button
     if os.path.exists(PDF_PATH):
         with open(PDF_PATH, "rb") as f:
-            st.download_button(
-                label="📄 Download Case Study PDF",
-                data=f,
-                file_name="JagadeeshN_Instamart_Analysis.pdf",
-                mime="application/pdf"
-            )
+            st.download_button(label="📄 Download Case Study PDF", data=f, file_name="JagadeeshN_Analysis.pdf")
 
-    theme = st.radio("Select Theme", ["Light","Dark"])
-    zones = st.multiselect("Geographic Clusters", df['zone'].unique(), df['zone'].unique())
-    
     st.divider()
     st.subheader("🛠️ Profitability Simulator")
     fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 5)
     disc_opt = st.slider("Discount Optimization (%)", 0, 100, 20)
-    
-    st.subheader("⛈️ Contextual Scenarios")
-    scenario = st.selectbox("Select Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
     aov_boost = st.slider("AOV Expansion Strategy (₹)", 0, 100, 0)
+    scenario = st.selectbox("Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
 
 # --- SIMULATION ENGINE ---
-f_df = df[df['zone'].isin(zones)].copy()
+f_df = df.copy()
 f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
+f_df['order_value'] += aov_boost
 
 if scenario == "Heavy Rain":
     f_df['delivery_cost'] *= 1.3
 elif scenario == "IPL Match Night":
     f_df['order_value'] *= 1.15
 
-f_df['order_value'] += aov_boost
 f_df['commission'] = f_df['order_value'] * 0.18
-f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (
-    f_df['delivery_cost'] + f_df['discount'] + f_df['opex']
-)
+f_df['ad_revenue'] = f_df['order_value'] * 0.05
+f_df['opex'] = 12
+f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
 
 # --- HEADER ---
-st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
-st.markdown("#### 🚀 Target: Positive Contribution Margin (CM2) by June 2026")
+col_logo, col_text = st.columns([1, 5])
+with col_logo:
+    st.image(SWIGGY_BRAND_URL, width=80)
+with col_text:
+    st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
 st.divider()
 
 # --- KPI ROW ---
-total_gov = f_df['order_value'].sum()
-avg_cm = f_df['net_profit'].mean()
-burn_rate = (f_df['discount'].sum() / total_gov) * 100 if total_gov != 0 else 0
-orders = len(f_df)
-
-k1, k2, k3, k4 = st.columns(4)
+k1, k2, k3 = st.columns(3)
 with k1:
-    st.markdown(f'<div class="kpi-metric">₹{total_gov/1e6:.2f}M<div class="kpi-label">Total GOV</div><div class="kpi-subbox">Scale</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-metric">₹{f_df["order_value"].sum()/1e6:.2f}M<br><small>Total GOV</small></div>', unsafe_allow_html=True)
 with k2:
-    st.markdown(f'<div class="kpi-metric">₹{avg_cm:.2f}<div class="kpi-label">Avg Net Profit/Order</div><div class="kpi-subbox">CM2 Target</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-metric">₹{f_df["net_profit"].mean():.2f}<br><small>Avg Profit/Order (CM2)</small></div>', unsafe_allow_html=True)
 with k3:
-    st.markdown(f'<div class="kpi-metric">{burn_rate:.1f}%<div class="kpi-label">Discount Burn</div><div class="kpi-subbox">Efficiency</div></div>', unsafe_allow_html=True)
-with k4:
-    st.markdown(f'<div class="kpi-metric">{orders:,}<div class="kpi-label">Orders Modeled</div><div class="kpi-subbox">Sample</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-metric">{len(f_df):,}<br><small>Orders Analyzed</small></div>', unsafe_allow_html=True)
 
-# --- ANALYTICS TABS ---
-t1, t2, t3, t4, t5, t6 = st.tabs(["📊 Financials", "🏍️ Ops", "🥬 Wastage", "🧠 Forecasting", "📈 Scenarios", "📖 Case Study"])
+# --- TABS ---
+t1, t2, t3 = st.tabs(["📊 Financials", "📈 Scenarios", "📖 Case Study"])
 
 with t1:
     st.subheader("Unit Economics Waterfall")
     metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
-    vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
-            -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
-    fig_water = go.Figure(go.Waterfall(orientation = "v", x = metrics + ['Net Profit'], y = vals + [0],
-        decreasing = {"marker":{"color":"#EF4444"}}, increasing = {"marker":{"color":"#60B246"}}, totals = {"marker":{"color":"#FC8019"}}))
-    st.plotly_chart(fig_water, use_container_width=True)
+    vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -f_df['opex'].mean()]
+    fig = go.Figure(go.Waterfall(orientation="v", x=metrics + ['Net Profit'], y=vals + [0], totals={"marker":{"color":"#FC8019"}}))
+    st.plotly_chart(fig, use_container_width=True)
 
-with t5:
-    st.subheader("Scenario Comparison")
-    scenarios = ["Normal Operations", "Heavy Rain", "IPL Match Night"]
-    profits = []
-    for s in scenarios:
-        temp = df.copy()
-        if s == "Heavy Rain": temp['delivery_cost'] *= 1.3
-        elif s == "IPL Match Night": temp['order_value'] *= 1.15
-        temp['commission'] = temp['order_value'] * 0.18
-        temp['net_profit'] = (temp['commission'] + temp['ad_revenue'] + temp['delivery_fee']) - (temp['delivery_cost'] + temp['discount'] + temp['opex'])
-        profits.append(temp['net_profit'].mean())
-    st.bar_chart(pd.DataFrame({"Scenario": scenarios, "Net Profit": profits}).set_index('Scenario'))
-
-with t6:
-    st.header("Strategic Case Study: Achieving CM2 Positivity")
-    st.caption("By Jagadeesh N | BBA, SRM IST (2026)")
+with t3:
+    st.header("Executive Case Study: Improving Instamart Profitability [cite: 1]")
+    st.caption("By Jagadeesh N | BBA, SRM IST (2026) [cite: 2]")
+    
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("📍 Problem Statement")
-        st.write("Quick-commerce businesses like Swiggy Instamart operate on thin margins due to high last-mile costs and discount-heavy growth.")
-        st.write("Achieving CM2 positivity is the industry's primary challenge.")
-        st.subheader("💡 Key Strategic Insights")
-        st.success("**AOV Lever:** A ₹50-₹70 increase in AOV has higher impact than 20% volume growth.")
-        st.info("**Batching:** Reducing costs by ₹10 via batching is 2x more sustainable than increasing fees.")
+        st.subheader("📍 Problem Statement [cite: 4]")
+        st.write("Quick-commerce businesses operate on thin margins due to high last-mile costs and discount-heavy growth[cite: 5]. Achieving Contribution Margin (CM2) positivity is the primary challenge[cite: 6].")
+        
+        st.subheader("💡 Key Strategic Insights [cite: 12]")
+        st.success("**AOV is the Strongest Lever:** A ₹50-₹70 increase in AOV (via cross-selling) has a higher impact on profitability than a 20% volume growth.")
+        st.info("**Cost Efficiency:** Reducing delivery costs by ₹10 via batching is 2x more sustainable than increasing fees[cite: 14].")
+        st.error("**Scale Paradox:** High volume without healthy margins actually accelerates 'burn'[cite: 15].")
+
     with c2:
-        st.subheader("🚀 Recommendations")
-        st.markdown("* **High-AOV Baskets:** Tiered delivery for orders >₹500.\n* **Density:** Prioritize multi-order batching during peak demand.\n* **Discounting:** Shift to 'Margin-Aware' triggers.")
-        st.subheader("🛠️ Technical Execution")
-        st.write("Developed with Python and Pandas to bridge technical analysis and executive strategy.")
+        st.subheader("🚀 Strategic Recommendations [cite: 17]")
+        st.markdown("""
+        * **Incentivize High-AOV Baskets:** Use tiered delivery pricing for orders above ₹500[cite: 18].
+        * **Optimize Delivery Densities:** Prioritize 'Demand Clustering' and multi-order batching[cite: 19].
+        * **Dynamic Discounting:** Transition to 'Margin-Aware' discounting for high-margin categories[cite: 20].
+        """)
+        
+        st.subheader("🛠️ Technical Execution [cite: 21]")
+        st.write("Developed using Python (Pandas) for financial modeling and Streamlit for the executive UI.")
 
 st.markdown("---")
-st.caption("Developed by Jagadeesh.N | Business Analytics Portfolio")
-
-
+st.caption("Business Analyst Portfolio | Jagadeesh N [cite: 28]")
