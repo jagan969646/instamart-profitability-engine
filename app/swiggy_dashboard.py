@@ -3,116 +3,127 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.ensemble import RandomForestRegressor
 from datetime import datetime
 import os
 import time
 
-# --- 1. SYSTEM ARCHITECTURE ---
+# --- 1. SYSTEM CONFIGURATION ---
 st.set_page_config(page_title="SWIGGY NEURAL OPS", layout="wide", initial_sidebar_state="collapsed")
 
-# Elite Dark-Mode CSS
+# Elite Glassmorphism CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500&display=swap');
     html, body, [class*="css"] { font-family: 'JetBrains Mono', monospace; background-color: #030305; color: #8F9BB3; }
+    
+    /* Centered Header & Nav */
+    .header-box { text-align: center; padding-top: 20px; }
+    .nav-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; border-bottom: 1px solid #1A1C23; padding-bottom: 20px; }
+    
+    /* Console & Metrics */
+    .console-box { background: #000; color: #00FF41; padding: 12px; border-radius: 4px; font-size: 0.75rem; border: 1px solid #00FF4133; margin: 0 auto 25px auto; width: 80%; }
     .stMetric { background: #0A0B10; border: 1px solid #1A1C23; border-radius: 4px; padding: 15px !important; }
     [data-testid="stMetricValue"] { color: #FFFFFF !important; font-size: 1.6rem !important; }
-    .console-box { background: #000; color: #00FF41; padding: 15px; border-radius: 4px; font-size: 0.75rem; border: 1px solid #00FF4133; font-family: 'JetBrains Mono'; margin-bottom: 20px; }
-    .header-center { text-align: center; margin-bottom: 30px; }
+    
+    /* Navigation Buttons */
+    .stButton>button {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #8F9BB3 !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 1px;
+        transition: 0.3s;
+    }
+    .stButton>button:hover { border-color: #FC8019 !important; color: #FC8019 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. THE PATH RESOLVER (The "Senior" Fix) ---
+# --- 2. DATA RESOLVER ---
 def resolve_path(filename):
-    """Production-grade file resolver to prevent FileNotFoundError."""
-    # Search in current directory, parent, and recursive subdirectories
     for root, dirs, files in os.walk(os.getcwd()):
-        if filename in files:
-            return os.path.join(root, filename)
-    return filename # Fallback to original name
+        if filename in files: return os.path.join(root, filename)
+    return filename
 
-# --- 3. DATA ORCHESTRATION ---
 @st.cache_data
 def load_quantum_engine():
-    data_path = resolve_path('swiggy_simulated_data.csv')
-    df = pd.read_csv(data_path)
+    df = pd.read_csv(resolve_path('swiggy_simulated_data.csv'))
     df['order_time'] = pd.to_datetime(df['order_time'])
     df['hour'] = df['order_time'].dt.hour
     df['margin_rate'] = (df['contribution_margin'] / df['order_value']) * 100
     return df
 
-try:
-    df = load_quantum_engine()
-except Exception as e:
-    st.error(f"FATAL ERROR: Could not resolve data stream. Ensure 'swiggy_simulated_data.csv' is in your repository.")
-    st.stop()
+df = load_quantum_engine()
 
-# --- 4. CENTERED LOGO & COCOLE (CONTROL CONSOLE) ---
-st.markdown('<div class="header-center">', unsafe_allow_html=True)
-logo_path = resolve_path('image_d988b9.png')
-if os.path.exists(logo_path):
-    st.image(logo_path, width=150)
-else:
-    st.title("SWIGGY QUANTUM")
+# --- 3. LOGO & INITIAL STATE ---
+st.markdown('<div class="header-box">', unsafe_allow_html=True)
+logo = resolve_path('image_d988b9.png')
+if os.path.exists(logo): st.image(logo, width=140)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# The "Cocole" - Control Console (Centered)
+if 'page' not in st.session_state:
+    st.session_state.page = 'GROWTH_VECTORS'
+
+# --- 4. NEURAL NAVIGATION (CENTERED BUTTONS) ---
+nav_col1, nav_col2, nav_col3, nav_col4, nav_col5, nav_col6 = st.columns([2,1,1,1,1,2])
+with nav_col2:
+    if st.button("GROWTH"): st.session_state.page = 'GROWTH_VECTORS'
+with nav_col3:
+    if st.button("LOGISTICS"): st.session_state.page = 'LOGISTICS_NEURAL'
+with nav_col4:
+    if st.button("ECONOMICS"): st.session_state.page = 'FINANCIAL_QUANT'
+with nav_col5:
+    if st.button("RISK"): st.session_state.page = 'RISK_ANALYSIS'
+
+# --- 5. COCOLE (CONTROL CONSOLE) ---
 st.markdown(f"""
 <div class="console-box">
-    [{datetime.now().strftime('%H:%M:%S')}] SYSTEM_BOOT: SUCCESS<br>
-    [{datetime.now().strftime('%H:%M:%S')}] DATA_LINK: {len(df)} NODES ACTIVE<br>
-    [{datetime.now().strftime('%H:%M:%S')}] RISK_ANALYSIS: PUSHING NOTIFICATIONS TO OPERATORS...
+    [{datetime.now().strftime('%H:%M:%S')}] SYSTEM_MODE: {st.session_state.page}<br>
+    [{datetime.now().strftime('%H:%M:%S')}] ACTIVE_NODES: {len(df)} | STATUS: OVER-QUALIFIED
 </div>
 """, unsafe_allow_html=True)
 
-# --- 5. RISK ANALYSIS PUSH NOTIFICATIONS ---
-# Automated risk trigger based on data
-perishable_risk = df[df['freshness_hrs_left'] < 5]
-if not perishable_risk.empty:
-    st.toast(f"🚨 ALERT: {len(perishable_risk)} Units at Expiry Risk in Whitefield Sector", icon="⚠️")
-    time.sleep(1)
-    st.toast("🌧️ WEATHER UPDATE: Rainy conditions detected in Koramangala. SLA Buffer +15m", icon="⛈️")
+# Automated Push Notifications
+if df['freshness_hrs_left'].min() < 5:
+    st.toast("🚨 CRITICAL: Perishable expiry detected in Sector-4", icon="⚠️")
 
-# --- 6. THE 12-CHART QUANTUM GRID ---
-st.markdown("### 🛰️ GLOBAL OPERATIONAL VECTORS")
+# --- 6. MODULAR PAGE LOGIC ---
 
-# Primary Metrics
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("GMV ALPHA", f"₹{df['order_value'].sum()/1e5:.2f}L", "+5.2%")
-m2.metric("NET MARGIN", f"{df['margin_rate'].mean():.1f}%", "-0.4%")
-m3.metric("FLEET VELOCITY", f"{df['delivery_time_mins'].mean():.1f}m", "OPTIMAL")
-m4.metric("SYSTEM STRESS", "LOW", "-12% LOAD")
+# PAGE: GROWTH VECTORS
+if st.session_state.page == 'GROWTH_VECTORS':
+    st.subheader("🛰️ Market Growth & Temporal Vectors")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.plotly_chart(px.area(df.groupby('hour')['order_value'].sum().reset_index(), x='hour', y='order_value', title="1. Temporal Volume", template="plotly_dark", color_discrete_sequence=['#FC8019']), use_container_width=True)
+    with c2: st.plotly_chart(px.pie(df, names='zone', values='order_value', hole=0.6, title="2. Regional Concentration", template="plotly_dark"), use_container_width=True)
+    with c3: st.plotly_chart(px.bar(df.groupby('category')['order_value'].sum().reset_index(), x='category', y='order_value', title="3. Categorical GMV Alpha", template="plotly_dark"), use_container_width=True)
 
-# Matrix Layout
-col_a, col_b, col_c = st.columns(3)
+# PAGE: LOGISTICS NEURAL
+elif st.session_state.page == 'LOGISTICS_NEURAL':
+    st.subheader("🧠 Fleet Dynamics & SLA Neural Data")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.plotly_chart(px.box(df, x="weather", y="delivery_time_mins", title="4. Climatic SLA Variance", template="plotly_dark"), use_container_width=True)
+    with c2: st.plotly_chart(px.line(df.groupby('hour')['delivery_time_mins'].mean().reset_index(), x='hour', y='delivery_time_mins', title="5. Hourly SLA Reliability", template="plotly_dark"), use_container_width=True)
+    with c3: st.plotly_chart(px.density_contour(df, x="delivery_time_mins", y="order_value", title="6. Velocity Density", template="plotly_dark"), use_container_width=True)
 
-with col_a:
-    # 1. Temporal Demand
-    st.plotly_chart(px.area(df.groupby('hour')['order_value'].sum().reset_index(), x='hour', y='order_value', title="1. Temporal Volume", template="plotly_dark", color_discrete_sequence=['#FC8019']), use_container_width=True)
-    # 2. Weather Variance
-    st.plotly_chart(px.box(df, x="weather", y="delivery_time_mins", title="2. Climatic Variance", template="plotly_dark"), use_container_width=True)
-    # 3. Zonal Mix
-    st.plotly_chart(px.pie(df, names='zone', values='order_value', hole=0.6, title="3. Regional Concentration", template="plotly_dark"), use_container_width=True)
-    # 4. Logistics Costs
-    st.plotly_chart(px.histogram(df, x="delivery_cost", title="4. Delivery Overhead Distribution", template="plotly_dark"), use_container_width=True)
+# PAGE: FINANCIAL QUANT
+elif st.session_state.page == 'FINANCIAL_QUANT':
+    st.subheader("💎 Unit Economics & Profitability Quant")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.plotly_chart(px.scatter(df, x="discount", y="contribution_margin", trendline="ols", title="7. Discount Elasticity", template="plotly_dark"), use_container_width=True)
+    with c2: st.plotly_chart(px.violin(df, y="margin_rate", x="zone", box=True, title="8. Zonal Margin Stability", template="plotly_dark"), use_container_width=True)
+    with c3: st.plotly_chart(px.scatter(df, x="delivery_cost", y="contribution_margin", title="9. Cost/Margin Correlation", template="plotly_dark"), use_container_width=True)
 
-with col_b:
-    # 5. Category Depth
-    st.plotly_chart(px.bar(df.groupby('category')['order_value'].sum().reset_index(), x='category', y='order_value', title="5. Categorical GMV", template="plotly_dark"), use_container_width=True)
-    # 6. Freshness Decay
-    st.plotly_chart(px.scatter(df, x="freshness_hrs_left", y="order_value", color="category", title="6. Perishable Decay Vector", template="plotly_dark"), use_container_width=True)
-    # 7. Discount Elasticity
-    st.plotly_chart(px.scatter(df, x="discount", y="contribution_margin", trendline="ols", title="7. Discount Elasticity", template="plotly_dark"), use_container_width=True)
-    # 8. Delivery Density
-    st.plotly_chart(px.density_contour(df, x="delivery_time_mins", y="order_value", title="8. Delivery Velocity Density", template="plotly_dark"), use_container_width=True)
+# PAGE: RISK ANALYSIS
+elif st.session_state.page == 'RISK_ANALYSIS':
+    st.subheader("🚨 Risk Mitigation & 3D Vector Space")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.plotly_chart(px.histogram(df, x="delivery_cost", title="10. Delivery Overhead Risk", template="plotly_dark"), use_container_width=True)
+    with c2: st.plotly_chart(px.scatter(df, x="freshness_hrs_left", y="order_value", color="category", title="11. Perishable Decay Risk", template="plotly_dark"), use_container_width=True)
+    with c3: st.plotly_chart(px.scatter_3d(df.sample(500), x='order_value', y='delivery_time_mins', z='margin_rate', color='zone', title="12. 3D Operational Space", template="plotly_dark"), use_container_width=True)
 
-with col_c:
-    # 9. Margin Stability
-    st.plotly_chart(px.violin(df, y="margin_rate", x="zone", box=True, title="9. Zonal Margin Stability", template="plotly_dark"), use_container_width=True)
-    # 10. SLA Reliability
-    st.plotly_chart(px.line(df.groupby('hour')['delivery_time_mins'].mean().reset_index(), x='hour', y='delivery_time_mins', title="10. Hourly SLA Reliability", template="plotly_dark"), use_container_width=True)
-    # 11. Cost vs Margin
-    st.plotly_chart(px.scatter(df, x="delivery_cost", y="contribution_margin", title="11. Logistics/Margin Correlation", template="plotly_dark"), use_container_width=True)
-    # 12. Market Archetypes (AI Cluster Proxy)
-    st.plotly_chart(px.scatter_3d(df.sample(500), x='order_value', y='delivery_time_mins', z='margin_rate', color='zone', title="12. 3D Operational Vector Space", template="plotly_dark"), use_container_width=True)
+# Global Footer Metrics
+st.markdown("---")
+f1, f2, f3, f4 = st.columns(4)
+f1.metric("TOTAL GMV", f"₹{df['order_value'].sum()/1e5:.1f}L")
+f2.metric("AVG MARGIN", f"{df['margin_rate'].mean():.1f}%")
+f3.metric("SYSTEM SLA", f"{df['delivery_time_mins'].mean():.1f}m")
+f4.metric("ALPHA STATUS", "ACTIVE")
