@@ -14,8 +14,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. DYNAMIC THEME ENGINE (HIGH CONTRAST) ---
+# --- 2. DYNAMIC THEME ENGINE (DEFAULTED TO DARK) ---
 def apply_swiggy_theme(theme_choice):
+    # Logic updated to prioritize Dark theme properties
     if theme_choice == "Swiggy Neural (Dark)":
         bg, text, card, accent, sidebar_bg = "#050505", "#8F9BB3", "#111115", "#FC8019", "#0A0A0C"
     else:
@@ -98,7 +99,8 @@ with st.sidebar:
     if os.path.exists(logo_file): st.image(logo_file, use_container_width=True)
     
     st.markdown("### 🎛️ CONTROL TOWER")
-    theme_choice = st.selectbox("VISUAL MODE", ["Swiggy Standard (Light)", "Swiggy Neural (Dark)"])
+    # Selection list reordered to put "Dark" as index 0
+    theme_choice = st.selectbox("VISUAL MODE", ["Swiggy Neural (Dark)", "Swiggy Standard (Light)"])
     plot_template = apply_swiggy_theme(theme_choice)
     
     st.markdown("---")
@@ -135,6 +137,7 @@ def draw_intel_chart(fig, title_text):
 
 if module == "STRATEGIC_CASE_STUDY":
     st.subheader("📖 Case Study: Improving Instamart Profitability")
+    # Citations linked to PDF source metadata [cite: 2]
     st.markdown("By: **Jagadeesh N** | BBA, SRM IST (2026) | Aspiring Business Analyst [cite: 2]")
     
     cl, cr = st.columns([2, 1])
@@ -189,4 +192,3 @@ elif module == "RISK_VECTORS":
 
 # --- 7. FOOTER ---
 st.markdown(f'<div class="footer-sig">DESIGNED BY JAGADEESH N | NEURAL OPS V4.0</div>', unsafe_allow_html=True)
-
