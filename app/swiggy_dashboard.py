@@ -130,8 +130,9 @@ with st.sidebar:
     marketing_spend = st.slider("Marketing Spend (₹)", 0, 50000, 0)
 
     # Reset button
+    # Reset button
     if st.button("🔄 Reset Levers"):
-        st.experimental_rerun()
+        st.rerun()
 
 # --- SIMULATION ENGINE ---
 f_df = df[df['zone'].isin(zones)].copy()
@@ -344,4 +345,5 @@ with t5:
 # --- FOOTER ---
 st.markdown("---")
 st.caption("Developed by Jagadeesh.N | Built for Hyperlocal Analytics Case Studies")
+
 
