@@ -15,45 +15,54 @@ SWIGGY_BRAND_URL = "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_
 # --- CUSTOM STYLING ---
 st.markdown("""
 <style>
-    .stApp { background-color: #121212; }
+    .stApp { background-color: #0E1117; }
     .main-title { color: #FC8019; font-weight: 800; font-size: 2.5rem; margin-bottom: 0px; }
+    
+    /* 4 KPI Cards */
     .kpi-metric {
-        background-color: #FC8019; color: white; padding: 15px; border-radius: 12px;
-        text-align: center; font-weight: 800; font-size: 1.4rem; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        background-color: #FC8019;
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 1.5rem;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
     }
     .kpi-metric small { font-weight: 400; font-size: 0.85rem; display: block; margin-top: 5px; opacity: 0.9; }
-    .data-box { background-color: #000000; border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 20px; }
-    .data-text { color: #2ECC71; font-family: 'Courier New', monospace; font-size: 1.1rem; line-height: 1.6; }
+
+    /* The Black Box with Green Data */
+    .data-box {
+        background-color: #000000;
+        border: 1px solid #2ECC71;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .data-text {
+        color: #2ECC71; 
+        font-family: 'Courier New', monospace;
+        font-size: 1.1rem;
+        line-height: 1.7;
+    }
+    .data-label { color: #555; font-size: 0.8rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- SMART DATA LOADING ---
+# --- DATA LOADING ---
 @st.cache_data
 def load_data():
     if not os.path.exists(DATA_PATH):
-        st.error(f"🚨 Missing file: {DATA_PATH}")
+        st.error("🚨 Data file not found.")
         st.stop()
     
     df = pd.read_csv(DATA_PATH)
     df.columns = df.columns.str.strip().str.lower()
-
-    # SMART COLUMN MAPPING (Fixes the KeyError)
-    mapping = {
-        'delivery_charges': 'delivery_fee',
-        'delivery fee': 'delivery_fee',
-        'order_value_inr': 'order_value',
-        'discount_applied': 'discount'
-    }
-    df = df.rename(columns=mapping)
-
-    # Check for core columns
-    required = ['order_value', 'delivery_fee', 'discount', 'delivery_cost']
-    missing = [c for c in required if c not in df.columns]
     
-    if missing:
-        st.error(f"❌ Critical Error: The CSV is missing these columns: {missing}")
-        st.write("Current Columns found in your file:", list(df.columns))
-        st.stop()
+    # FIX: If delivery_fee is missing, initialize it at 0 so the slider can add to it
+    if 'delivery_fee' not in df.columns:
+        df['delivery_fee'] = 0.0
         
     return df
 
@@ -61,67 +70,97 @@ df = load_data()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image(LOCAL_LOGO_PATH if os.path.exists(LOCAL_LOGO_PATH) else SWIGGY_BRAND_URL, width=150)
+    if os.path.exists(LOCAL_LOGO_PATH):
+        st.image(LOCAL_LOGO_PATH, width=180)
+    else:
+        st.image(SWIGGY_BRAND_URL, width=100)
+    
     st.title("Control Tower")
-    fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 50, 15)
-    disc_opt = st.slider("Discount Reduction (%)", 0, 100, 25)
-    aov_boost = st.slider("AOV Boost (₹)", 0, 150, 40)
-    scenario = st.selectbox("Market Conditions", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
+    st.divider()
+    
+    st.subheader("🛠️ Strategy Simulator")
+    fee_adj = st.slider("Delivery Fee Premium (₹)", 0, 60, 20)
+    disc_opt = st.slider("Discount Reduction (%)", 0, 100, 30)
+    aov_boost = st.slider("AOV Boost Strategy (₹)", 0, 200, 50)
+    scenario = st.selectbox("Market Scenario", ["Normal Operations", "Heavy Rain", "IPL Match Night"])
 
 # --- SIMULATION ENGINE ---
 f_df = df.copy()
+
+# Apply User Levers
 f_df['order_value'] += aov_boost
 f_df['delivery_fee'] += fee_adj
 f_df['discount'] *= (1 - disc_opt/100)
 
+# Apply Scenario Logic
 if scenario == "Heavy Rain":
-    f_df['delivery_cost'] *= 1.35
+    f_df['delivery_cost'] *= 1.40
 elif scenario == "IPL Match Night":
-    f_df['order_value'] *= 1.20
+    f_df['order_value'] *= 1.25
 
+# Standard Financial Ratios
 f_df['commission'] = f_df['order_value'] * 0.18
-f_df['ad_revenue'] = f_df['order_value'] * 0.05
-f_df['opex'] = 12
+f_df['ad_revenue'] = f_df['order_value'] * 0.04
+f_df['opex_fixed'] = 15.00 # Dark Store processing costs
+
+# CM2 Calculation
 f_df['net_profit'] = (f_df['commission'] + f_df['ad_revenue'] + f_df['delivery_fee']) - \
-                     (f_df['delivery_cost'] + f_df['discount'] + f_df['opex'])
+                     (f_df['delivery_cost'] + f_df['discount'] + f_df['opex_fixed'])
+
 f_df['margin_pct'] = (f_df['net_profit'] / f_df['order_value']) * 100
 
-# --- UI DISPLAY ---
-c_l, c_t = st.columns([0.1, 0.9])
-with c_l: st.image(SWIGGY_BRAND_URL, width=70)
-with c_t: st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
+# --- HEADER ---
+c1, c2 = st.columns([0.1, 0.9])
+with c1: st.image(SWIGGY_BRAND_URL, width=70)
+with c2: st.markdown("<h1 class='main-title'>Instamart Strategic Decision Engine</h1>", unsafe_allow_html=True)
+st.divider()
 
-# 4 KPI ROW
+# --- 4 KPI ROW ---
 k1, k2, k3, k4 = st.columns(4)
-with k1: st.markdown(f'<div class="kpi-metric">₹{f_df["order_value"].sum()/1e6:.2f}M<small>Projected GOV</small></div>', unsafe_allow_html=True)
-with k2: st.markdown(f'<div class="kpi-metric">₹{f_df["net_profit"].mean():.2f}<small>Avg Profit / Order</small></div>', unsafe_allow_html=True)
-with k3: st.markdown(f'<div class="kpi-metric">{f_df["margin_pct"].mean():.1f}%<small>Contribution Margin %</small></div>', unsafe_allow_html=True)
-with k4: st.markdown(f'<div class="kpi-metric">{len(f_df):,}<small>Total Order Vol</small></div>', unsafe_allow_html=True)
+with k1: st.markdown(f'<div class="kpi-metric">₹{f_df["order_value"].sum()/1e6:.2f}M<small>Total GOV</small></div>', unsafe_allow_html=True)
+with k2: st.markdown(f'<div class="kpi-metric">₹{f_df["net_profit"].mean():.2f}<small>Avg Profit/Order</small></div>', unsafe_allow_html=True)
+with k3: st.markdown(f'<div class="kpi-metric">{f_df["margin_pct"].mean():.1f}%<small>Contribution Margin</small></div>', unsafe_allow_html=True)
+with k4: st.markdown(f'<div class="kpi-metric">{len(f_df):,}<small>Orders Analyzed</small></div>', unsafe_allow_html=True)
 
-# THE BLACK BOX
+# --- THE BLACK BOX (GREEN DATA) ---
 st.markdown(f"""
 <div class="data-box">
     <div class="data-text">
-        [REVENUE] Avg Comm: ₹{f_df['commission'].mean():.2f} | Ad Rev: ₹{f_df['ad_revenue'].mean():.2f} | Del. Fee: ₹{f_df['delivery_fee'].mean():.2f}<br>
-        [COSTS] Del. Cost: ₹{f_df['delivery_cost'].mean():.2f} | Disc: ₹{f_df['discount'].mean():.2f} | OPEX: ₹12.00<br>
-        [FINAL] NET PROFIT PER ORDER: ₹{f_df['net_profit'].mean():.2f}
+        <span style="color:#555"># EXECUTION_LOG: SCENARIO_{scenario.replace(" ","_").upper()}</span><br>
+        [REVENUE] Commission: ₹{f_df['commission'].mean():.2f} | Ad_Rev: ₹{f_df['ad_revenue'].mean():.2f} | Del_Fee: ₹{f_df['delivery_fee'].mean():.2f}<br>
+        [EXPENSE] Del_Cost: ₹{f_df['delivery_cost'].mean():.2f} | Discount: ₹{f_df['discount'].mean():.2f} | OPEX: ₹15.00<br>
+        [SUMMARY] CM2_PROFIT: <span style="font-weight:bold">₹{f_df['net_profit'].mean():.2f}</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# WATERFALL CHART
-metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
-vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
-        -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -12]
+# --- VISUALS ---
+t1, t2 = st.tabs(["📊 Financial Waterfall", "📖 Case Study"])
 
-fig = go.Figure(go.Waterfall(
-    orientation="v", x=metrics + ['Net Profit'], y=vals + [0],
-    measure=["relative"]*6 + ["total"],
-    totals={"marker":{"color":"#FC8019"}},
-    increasing={"marker":{"color":"#2ECC71"}},
-    decreasing={"marker":{"color":"#FF4B4B"}}
-))
-fig.update_layout(template="plotly_dark", title="Unit Economics Breakdown (CM2)")
-st.plotly_chart(fig, use_container_width=True)
+with t1:
+    metrics = ['Commission', 'Ad Revenue', 'Delivery Fee', 'Delivery Cost', 'Discount', 'OPEX']
+    vals = [f_df['commission'].mean(), f_df['ad_revenue'].mean(), f_df['delivery_fee'].mean(), 
+            -f_df['delivery_cost'].mean(), -f_df['discount'].mean(), -15.00]
+    
+    fig = go.Figure(go.Waterfall(
+        orientation="v",
+        x=metrics + ['Net Profit'],
+        y=vals + [0],
+        measure=["relative"]*6 + ["total"],
+        totals={"marker":{"color":"#FC8019"}},
+        increasing={"marker":{"color":"#2ECC71"}},
+        decreasing={"marker":{"color":"#FF4B4B"}}
+    ))
+    
+    fig.update_layout(template="plotly_dark", title="Unit Economics: Contribution Margin 2 Breakdown", height=500)
+    st.plotly_chart(fig, use_container_width=True)
 
-st.caption("Developed by Jagadeesh N | Business Analyst Portfolio 2026")
+with t2:
+    st.subheader("Profitability Analysis Summary")
+    st.markdown("""
+    * **Observation:** Increasing AOV (Basket Size) is the most efficient way to dilute fixed delivery costs.
+    * **Action:** Shift from generic discounting to tiered loyalty rewards for orders >₹500.
+    """)
+
+st.markdown("---")
+st.caption("Strategic Analyst Portfolio | Jagadeesh N")
