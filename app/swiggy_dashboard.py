@@ -190,5 +190,6 @@ elif module == "RISK_VECTORS":
     with c2: draw_intel_chart(px.scatter(f_df, x="freshness_hrs_left", y="order_value", color="category"), "Inventory Decay Vector")
     with c3: draw_intel_chart(px.scatter_3d(f_df.sample(min(len(f_df), 400)), x='order_value', y='delivery_time_mins', z='margin_rate', color='market_context'), "3D Operational Matrix")
 
-# --- 7. FOOTER ---
+# fotter
 st.markdown(f'<div class="footer-sig">DESIGNED BY JAGADEESH N | NEURAL OPS V4.0</div>', unsafe_allow_html=True)
+
